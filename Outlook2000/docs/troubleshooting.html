@@ -252,6 +252,12 @@ permissions to modify the system registry, then execute the command
 (obviously with the correct path substituted):<br>
 <span style="font-style: italic;">&nbsp;&nbsp;&nbsp;
 "c:\Program Files\SpamBayes\bin\outlook_addin_register.exe" hkey_local_machine</span><br>
+Note that the double-quotes in the above command are significant (and
+should be typed).  Because "Program Files" has a space in it, you
+<b>must</b> surround the entire command name with quotes.  Otherwise,
+you'll get an error something like:
+<pre>'c:\Program' is not recognized as an internal or external command,
+operable program or batch file.</pre><br>
 If you <a href="#CheckLog">check the installation log</a> after
 performing such an install, you should see the following messages:<br>
 <span style="font-style: italic;">&nbsp;&nbsp;&nbsp; Registered:
