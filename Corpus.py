@@ -183,7 +183,12 @@ class Corpus:
     def takeMessage(self, key, fromcorpus):
         '''Move a Message from another corpus to this corpus'''
 
+        # XXX Hack: Calling msg.getSubstance() here ensures that the
+        # message substance is in memory.  If it isn't, when addMessage()
+        # calls message.store(), which calls message.getSubstance(), that
+        # will try to load the substance from the as-yet-unwritten new file.
         msg = fromcorpus[key]
+        msg.getSubstance()
         fromcorpus.removeMessage(msg)
         self.addMessage(msg)
 
