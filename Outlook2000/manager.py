@@ -107,7 +107,7 @@ class PickleStorageManager(BasicStorageManager):
         cPickle.dump(mdb, open(self.mdb_filename,"wb"), 1)
     def close_mdb(self, mdb):
         pass
-        
+
 class DBStorageManager(BasicStorageManager):
     db_extension = ".db"
     def open_bayes(self):
@@ -132,7 +132,7 @@ class DBStorageManager(BasicStorageManager):
     def close_mdb(self, mdb):
         mdb.close()
 
-# Our main "bayes manager"    
+# Our main "bayes manager"
 class BayesManager:
     def __init__(self, config_base="default", outlook=None, verbose=1):
         self.addin = None
