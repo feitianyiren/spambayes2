@@ -344,8 +344,8 @@ class BayesProxyListener(Dibbler.Listener):
     def __init__(self, serverName, serverPort, proxyPort):
         proxyArgs = (serverName, serverPort)
         Dibbler.Listener.__init__(self, proxyPort, BayesProxy, proxyArgs)
-        print 'Listener on port %d is proxying %s:%d' % \
-               (proxyPort, serverName, serverPort)
+        print 'Listener on port %s is proxying %s:%d' % \
+               (_addressPortStr(proxyPort), serverName, serverPort)
 
 
 class BayesProxy(POP3ProxyBase):
@@ -535,9 +535,10 @@ def readUIResources():
     # `getattr` or `__import__` work with ResourcePackage.
     from spambayes.resources import ui_html
     images = {}
-    for imageName in IMAGES:
-        exec "from spambayes.resources import %s_gif" % imageName
-        exec "images[imageName] = %s_gif.data" % imageName
+    for baseName in IMAGES:
+        moduleName = '%s.%s_gif' % ('spambayes.resources', baseName)
+        module = __import__(moduleName, {}, {}, ('spambayes', 'resources'))
+        images[baseName] = module.data
     return ui_html.data, images
 
 
@@ -1066,7 +1067,7 @@ class State:
 
         if options.pop3proxy_ports:
             splitPorts = options.pop3proxy_ports.split(',')
-            self.proxyPorts = map(int, map(string.strip, splitPorts))
+            self.proxyPorts = map(_addressAndPort, splitPorts)
 
         if len(self.servers) != len(self.proxyPorts):
             print "pop3proxy_servers & pop3proxy_ports are different lengths!"
@@ -1097,7 +1098,7 @@ class State:
         versions of the details, for display in the Status panel."""
         serverStrings = ["%s:%s" % (s, p) for s, p in self.servers]
         self.serversString = ', '.join(serverStrings)
-        self.proxyPortsString = ', '.join(map(str, self.proxyPorts))
+        self.proxyPortsString = ', '.join(map(_addressPortStr, self.proxyPorts))
 
     def createWorkers(self):
         """Using the options that were initialised in __init__ and then
@@ -1155,6 +1156,25 @@ class State:
             self.hamTrainer = storage.HamTrainer(self.bayes)
             self.spamCorpus.addObserver(self.spamTrainer)
             self.hamCorpus.addObserver(self.hamTrainer)
+
+
+# Option-parsing helper functions
+def _addressAndPort(s):
+   """Decode a string representing a port to bind to, with optional address."""
+   s = s.strip()
+   if ':' in s:
+     addr, port = s.split(':')
+     return addr, int(port)
+   else:
+     return '', int(s)
+
+def _addressPortStr((addr, port)):
+  """Encode a string representing a port to bind to, with optional address."""
+  if not addr:
+    return str(port)
+  else:
+    return '%s:%d' % (addr, port)
+
 
 state = State()
 proxyListeners = []
@@ -1430,7 +1450,7 @@ def run():
         elif opt == '-p':
             options.pop3proxy_persistent_storage_file = arg
         elif opt == '-l':
-            state.proxyPorts = [int(arg)]
+            state.proxyPorts = [_addressAndPort(arg)]
         elif opt == '-u':
             state.uiPort = int(arg)
         elif opt == '-z':
