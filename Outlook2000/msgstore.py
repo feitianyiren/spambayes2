@@ -307,7 +307,7 @@ class MAPIMsgStoreFolder(MsgStoreMsg):
         # Resolve the field name
         resolve_props = ( (mapi.PS_PUBLIC_STRINGS, "Spam"), )
         resolve_ids = folder.GetIDsFromNames(resolve_props, 0)
-        field_id = PROP_TAG( PT_I4, PROP_ID(resolve_ids[0]))
+        field_id = PROP_TAG( PT_DOUBLE, PROP_ID(resolve_ids[0]))
         # Setup the properties we want to read.
         prop_ids = PR_ENTRYID, PR_SEARCH_KEY, PR_MESSAGE_FLAGS
         table.SetColumns(prop_ids, 0)
