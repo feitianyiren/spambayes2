@@ -52,7 +52,7 @@ class FilterArrivalsDialog(dialog.Dialog):
 
         [BUTTON,          "Certain Spam",       -1,                  (7,43,235,65),    cs   | win32con.BS_GROUPBOX],
         [STATIC,          certain_spam_msg,     -1,                  (13,52,212,10),   cs],
-        ["msctls_trackbar32", "",               IDC_SLIDER_CERTAIN,  (13,66,165,12),   cs   | commctrl.TBS_BOTH | commctrl.TBS_NOTICKS],
+        ["msctls_trackbar32", "",               IDC_SLIDER_CERTAIN,  (13,62,165,12),   cs   | commctrl.TBS_BOTH | commctrl.TBS_AUTOTICKS ],
         [EDIT,            "",                   IDC_EDIT_CERTAIN,    (184,63,51,14),   csts | win32con.ES_AUTOHSCROLL | win32con.WS_BORDER],
         [STATIC,          "and these messages should be", -1,        (13,76,107,10),   cs],
         [COMBOBOX,        "",                   IDC_ACTION_CERTAIN,  (13,88,55,40),    csts | win32con.CBS_DROPDOWNLIST | win32con.WS_VSCROLL],
@@ -62,7 +62,7 @@ class FilterArrivalsDialog(dialog.Dialog):
 
         [BUTTON,          "Possible Spam",      -1,                  (7,114,235,68),   cs   | win32con.BS_GROUPBOX],
         [STATIC,          unsure_msg,           -1,                  (13,124,212,10),  cs],
-        ["msctls_trackbar32", "",               IDC_SLIDER_UNSURE,   (13,141,165,12),  cs   | commctrl.TBS_BOTH | commctrl.TBS_NOTICKS],
+        ["msctls_trackbar32", "",               IDC_SLIDER_UNSURE,   (13,137,165,12),  cs   | commctrl.TBS_BOTH | commctrl.TBS_AUTOTICKS],
         [EDIT,            "",                   IDC_EDIT_UNSURE,     (184,137,54,14),  csts | win32con.ES_AUTOHSCROLL | win32con.WS_BORDER],
         [STATIC,          "and these messages should be", -1,        (13,150,107,10),  cs],
         [COMBOBOX,        "",                   IDC_ACTION_UNSURE,   (13,161,55,40),   csts | win32con.CBS_DROPDOWNLIST | win32con.WS_VSCROLL],
@@ -225,6 +225,7 @@ class FilterArrivalsDialog(dialog.Dialog):
         slider.SetRange(0, 100, 0)
         slider.SetLineSize(1)
         slider.SetPageSize(5)
+        slider.SetTicFreq(10)
         self._AdjustSliderToEdit(idc_slider, idc_edit)
 
     def _AdjustSliderToEdit(self, idc_slider, idc_edit):
@@ -383,14 +384,17 @@ if __name__=='__main__':
     import msgstore
 
     class Config: pass
-    class Manager: pass
+    class Manager:
+        def FormatFolderNames(self, folder_ids, include_sub):
+            return "Folder 1; Folder 2"
+
     mgr = Manager()
     mgr.message_store = msgstore.MAPIMsgStore()
     mgr.config = config = Config()
     config.filter = Config()
     inbox = outlook.Session.GetDefaultFolder(constants.olFolderInbox)
     config.filter.watch_folder_ids = [(inbox.StoreID, inbox.EntryID)]
-    config.filter.watch_folder_include_sub = True
+    config.filter.watch_include_sub = True
     config.filter.spam_folder_id = ""
     config.filter.spam_action = "Mo"
     config.filter.spam_threshold = 80
@@ -405,8 +409,8 @@ if __name__=='__main__':
     config.filter_now.only_unseen = True
     config.filter_now.action_all = True
 
-    #tester = FilterArrivalsDialog
-    tester = FilterNowDialog
+    tester = FilterArrivalsDialog
+##    tester = FilterNowDialog
     d = tester(mgr, None)
     if d.DoModal() == win32con.IDOK:
         # do it again to make sure all config data is reflected.
