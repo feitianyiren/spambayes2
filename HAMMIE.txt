@@ -36,11 +36,11 @@ Instructions:
 
 2.  Create a new database:
 
-      $HOME/src/hammiefilter.py -n
+      $HOME/src/spambayes/hammiefilter.py -n
 
 3.  (optional) Train it on your existing mail:
 
-      $HOME/src/mboxtrain.py -d $HOME/.hammiedb -g $HOME/Mail/inbox -s $HOME/Mail/spam
+      $HOME/src/spambayes/mboxtrain.py -d $HOME/.hammiedb -g $HOME/Mail/inbox -s $HOME/Mail/spam
 
     You can add additional folder names if you like, using -g for "good"
     mail folders, and -s for "spam" folders.
@@ -48,7 +48,7 @@ Instructions:
 4.  Add the following two recipies to the top of your .procmailrc:
 
       :0fw
-      | $HOME/src/hammiefilter.py
+      | $HOME/src/spambayes/hammiefilter.py
 
       :0
       * ^X-Spambayes-Classification: spam
@@ -72,7 +72,7 @@ Instructions:
     morning at 2:21am ("crontab -e" with vixie cron, the default on most
     Linux systems):
 
-      21 2 * * * $HOME/src/mboxtrain.py -d $HOME/.hammiedb -g $HOME/Mail/inbox -s $HOME/Mail/spam
+      21 2 * * * $HOME/src/spambayes/mboxtrain.py -d $HOME/.hammiedb -g $HOME/Mail/inbox -s $HOME/Mail/spam
 
     As in step 3, you can add additional folder names here too.  It's
     important to do so if you regularly file mail in different folders,
