@@ -9,7 +9,7 @@ try:
 except ImportError:
     import StringIO
 import ConfigParser
-try: 
+try:
     from sets import Set
 except ImportError:
     from spambayes.compatsets import Set
@@ -544,6 +544,13 @@ class OptionsClass(object):
         self._config.write(output)
         return output.getvalue()
 
+
+# `optionsPathname` is the pathname of the last ini file in the list.
+# This is where the web-based configuration page will write its changes.
+# If no ini files are found, it defaults to bayescustomize.ini in the
+# current working directory.
+optionsPathname = None
+
 options = OptionsClass()
 
 d = StringIO.StringIO(defaults)
@@ -554,7 +561,9 @@ alternate = None
 if hasattr(os, 'getenv'):
     alternate = os.getenv('BAYESCUSTOMIZE')
 if alternate:
-    options.mergefiles(alternate.split())
+    filenames = alternate.split()
+    options.mergefiles(filenames)
+    optionsPathname = os.path.abspath(filenames[-1])
 else:
     alts = []
     for path in ['bayescustomize.ini', '~/.spambayesrc']:
@@ -563,3 +572,7 @@ else:
             alts.append(epath)
     if alts:
         options.mergefiles(alts)
+        optionsPathname = os.path.abspath(alts[-1])
+
+if not optionsPathname:
+    optionsPathname = os.path.abspath('bayescustomize.ini')
