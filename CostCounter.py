@@ -55,6 +55,59 @@ class DelayedCostCounter(CompositeCostCounter):
             s.append('Delayed-'+line)
         return '\n'.join(s)
 
+class CountCostCounter(CostCounter):
+    def __init__(self):
+        CostCounter.__init__(self)
+        self._fp = 0
+        self._fn = 0
+        self._unsure = 0
+        self._unsureham = 0
+        self._unsurespam = 0
+        self._spam = 0
+        self._ham = 0
+        self._correctham = 0
+        self._correctspam = 0
+        self._total = 0
+
+    def spam(self, scr):
+        self._total += 1
+        self._spam += 1
+        if scr < options.ham_cutoff:
+            self._fn += 1
+        elif scr < options.spam_cutoff:
+            self._unsure += 1
+            self._unsurespam += 1
+        else:
+            self._correctspam += 1
+
+    def ham(self, scr):
+        self._total += 1
+        self._ham += 1
+        if scr > options.spam_cutoff:
+            self._fp += 1
+        elif scr > options.ham_cutoff:
+            self._unsure += 1
+            self._unsureham += 1
+        else:
+            self._correctham += 1
+
+    def __str__(self):
+         return ("Total messages: %d; %d (%.1f%%) ham + %d (%.1f%%) spam\n"%(
+                     self._total,
+                     self._ham, (100.*self._ham)/self._total,
+                     self._spam, (100.*self._spam)/self._total)+
+                 "Ham: %d (%.2f%%) ok, %d (%.2f%%) unsure, %d (%.2f%%) fp\n"%(
+                     self._correctham, (100.*self._correctham)/self._ham,
+                     self._unsureham, (100.*self._unsureham)/self._ham,
+                     self._fp, (100.*self._fp)/self._ham)+
+                 "Spam: %d (%.2f%%) ok, %d (%.2f%%) unsure, %d (%.2f%%) fn\n"%(
+                     self._correctspam, (100.*self._correctspam)/self._spam,
+                     self._unsurespam, (100.*self._unsurespam)/self._spam,
+                     self._fn, (100.*self._fn)/self._spam)+
+                 "Score False: %.2f%% Unsure %.2f%%"%(
+                     (100.*(self._fp+self._fn))/self._total,
+                     (100.*self._unsure)/self._total))
+
 class StdCostCounter(CostCounter):
     name = "Standard Cost"
     def spam(self, scr):
@@ -96,14 +149,24 @@ class Flex2CostCounter(FlexCostCounter):
 
 def default():
      return CompositeCostCounter([
+                CountCostCounter(),
                 StdCostCounter(),
                 FlexCostCounter(),
                 Flex2CostCounter(),
                 DelayedCostCounter([
+                    CountCostCounter(),
                     StdCostCounter(),
                     FlexCostCounter(),
                     Flex2CostCounter(),
                 ])
+            ])
+
+def nodelay():
+     return CompositeCostCounter([
+                CountCostCounter(),
+                StdCostCounter(),
+                FlexCostCounter(),
+                Flex2CostCounter(),
             ])
 
 if __name__=="__main__":
