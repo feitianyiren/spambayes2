@@ -57,6 +57,23 @@ def train_message(msg, is_spam, mgr, rescore=False):
 
     return True
 
+# Untrain a message.
+# Return: None == not previously trained
+#         True == was_spam
+#         False == was_ham
+def untrain_message(msg, mgr):
+    from tokenizer import tokenize
+    stream = msg.GetEmailPackageObject()
+    if been_trained_as_spam(msg, mgr):
+        assert not been_trained_as_ham(msg, mgr), "Can't have been both!"
+        mgr.bayes.unlearn(tokenize(stream), True)
+        return True
+    if been_trained_as_ham(msg, mgr):
+        assert not been_trained_as_spam(msg, mgr), "Can't have been both!"
+        mgr.bayes.unlearn(tokenize(stream), False)
+        return False
+    return None
+
 def train_folder(f, isspam, mgr, progress):
     num = num_added = 0
     for message in f.GetMessageGenerator():

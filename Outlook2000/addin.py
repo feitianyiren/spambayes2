@@ -263,6 +263,18 @@ def ShowClues(mgr, explorer):
                             DisplayName="Original Message")
     new_msg.Display()
 
+# A hook for whatever tests we have setup
+def Tester(manager):
+    import tester, traceback
+    try:
+        print "Executing automated tests..."
+        tester.test(manager)
+        print "Tests worked."
+    except:
+        traceback.print_exc()
+        print "Tests FAILED.  Sorry about that.  If I were you, I would do a full re-train ASAP"
+        print "Please delete any test messages from your Spam, Unsure or Inbox folders first."
+
 # The "Delete As Spam" and "Recover Spam" button
 # The event from Outlook's explorer that our folder has changed.
 class ButtonDeleteAsEventBase:
@@ -423,6 +435,11 @@ class ExplorerWithEvents:
         self._AddPopup(popup, ShowClues, (self.manager, self),
                        Caption="Show spam clues for current message",
                        Enabled=True)
+        # If we are running from Python sources, enable a few extra items
+        if not hasattr(sys, "frozen"):
+            self._AddPopup(popup, Tester, (self.manager,),
+                           Caption="Execute test suite",
+                           Enabled=True)
         self.have_setup_ui = True
 
     def _AddPopup(self, parent, target, target_args, **item_attrs):
