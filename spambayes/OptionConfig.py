@@ -45,12 +45,13 @@ parm_ini_map = \
     'unsurestring': ('Hammie',          'header_unsure_string'),
     'p3servers':    ('pop3proxy',       'pop3proxy_servers'),
     'p3ports':      ('pop3proxy',       'pop3proxy_ports'),
+    'p3notate':     ('pop3proxy',       'pop3proxy_notate_to'),
    }
 
 # "Restore defaults" ignores these, because it would be pointlessly
 # destructive - they default to being empty, so you gain nothing by
 # restoring them.
-noRestore = ('pop3proxy_servers', 'pop3proxy_ports')
+noRestore = ('pop3proxy_servers', 'pop3proxy_ports', 'pop3_notate_to')
 
 # This governs the order in which the options appear on the configurator
 # page, and the headings and help text that are used.
@@ -77,6 +78,18 @@ page_layout = \
          server.  Again, you need to configure your email client to use this
          port.  If there are multiple servers, you must specify the same
          number of ports as servers, separated by commas."""),
+         
+        ("p3notate", "Notate To",
+         """Some email clients (Outlook Express, for example) can only set
+         up filtering rules on a limited set of headers.  These clients
+         cannot test for the existence/value of an arbitrary header and filter
+         mail based on that information.  To accomodate these kind of mail
+         clients, the Notate To: can be checked, which will add "spam,",
+         "ham,", or "unsure," to the recipient list.  A filter rule can then
+         test to see if one of these words (followed by a comma) is in the
+         recipient list, and route the mail to an appropriate folder, or take
+         whatever other action is supported and appropriate for the mail
+         classification."""),
     )),
 
     ("Statistics Options",
@@ -302,6 +315,17 @@ def editInput(parms):
     if not hco < sco:
         errmsg += '<li>Ham cutoff must be less than Spam cutoff</li>\n'
 
+    try:
+        nto = parms['p3notate']
+    except KeyError:
+        if options.pop3proxy_notate_to:
+            nto = "True"
+        else:
+            nto = "False"
+    
+    if not nto == "True" and not nto == "False":
+        errmsg += """<li>Notate To: must be "True" or "False".</li>\n"""
+    
     # edit for equal number of pop3servers and ports
     try:
         slist = parms['p3servers'].split(',')

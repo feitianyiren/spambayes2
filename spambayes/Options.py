@@ -386,6 +386,7 @@ pop3proxy_ham_cache: pop3proxy-ham-cache
 pop3proxy_unknown_cache: pop3proxy-unknown-cache
 pop3proxy_persistent_use_database: True
 pop3proxy_persistent_storage_file: hammie.db
+pop3proxy_notate_to: True
 
 # Deprecated - use pop3proxy_servers and pop3proxy_ports instead.
 pop3proxy_server_name:
@@ -491,6 +492,7 @@ all_options = {
                   'pop3proxy_unknown_cache': string_cracker,
                   'pop3proxy_persistent_use_database': boolean_cracker,
                   'pop3proxy_persistent_storage_file': string_cracker,
+                  'pop3proxy_notate_to': boolean_cracker,
                   },
     'html_ui': {'html_ui_port': int_cracker,
                 'html_ui_launch_browser': boolean_cracker,
