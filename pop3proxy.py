@@ -482,18 +482,8 @@ class BayesProxy(POP3ProxyBase):
 
             # Cache the message; don't pollute the cache with test messages.
             if command == 'RETR' and not state.isTest:
-                # The message name is the time it arrived, with a uniquifier
-                # appended if two arrive within one clock tick of each other.
-                messageName = "%10.10d" % long(time.time())
-                if messageName == state.lastBaseMessageName:
-                    state.lastBaseMessageName = messageName
-                    messageName = "%s-%d" % (messageName, state.uniquifier)
-                    state.uniquifier += 1
-                else:
-                    state.lastBaseMessageName = messageName
-                    state.uniquifier = 2
-
                 # Write the message into the Unknown cache.
+                messageName = state.getNewMessageName()
                 message = state.unknownCorpus.makeMessage(messageName)
                 message.setSubstance(messageText)
                 state.unknownCorpus.addMessage(message)
@@ -650,15 +640,9 @@ class UserInterface(Dibbler.HTTPPlugin):
             raise SystemExit
         self._writePostamble()
 
-    def onUpload(self, params):
-        """Save a message for later training."""
-        # Upload or paste?  Spam or ham?
-        content = params.get('file') or params.get('text')
-
-        # Convert platform-specific line endings into unix-style.
-        content = content.replace('\r\n', '\n').replace('\r', '\n')
-
-        # Single message or mbox?
+    def _convertUploadToMessageList(self, content):
+        """Returns a list of raw messages extracted from uploaded content.
+        You can upload either a single message or an mbox file."""
         if content.startswith('From '):
             # Get a list of raw messages from the mbox content.
             class SimpleMessage:
@@ -666,20 +650,26 @@ class UserInterface(Dibbler.HTTPPlugin):
                     self.guts = fp.read()
             contentFile = StringIO.StringIO(content)
             mbox = mailbox.PortableUnixMailbox(contentFile, SimpleMessage)
-            messages = map(lambda m: m.guts, mbox)
+            return map(lambda m: m.guts, mbox)
         else:
             # Just the one message.
-            messages = [content]
+            return [content]
 
+    def onUpload(self, file):
+        """Save a message for later training - used by Skip's proxytee.py."""
+        # Convert platform-specific line endings into unix-style.
+        file = file.replace('\r\n', '\n').replace('\r', '\n')
+
+        # Get a message list from the upload and write it into the cache.
+        messages = self._convertUploadToMessageList(file)
         for m in messages:
-            message = state.unknownCorpus.makeMessage("%d"%self.messageName)
+            messageName = state.getNewMessageName()
+            message = state.unknownCorpus.makeMessage(messageName)
             message.setSubstance(m)
             state.unknownCorpus.addMessage(message)
-            self.messageName += 1
 
-        # Save the database and return a link Home and another training form.
-        self.doSave()
-        self.push("<p>OK.</p>")
+        # Return a link Home.
+        self.write("<p>OK. Return <a href='home'>Home</a>.</p>")
 
     def onTrain(self, file, text, which):
         """Train on an uploaded or pasted message."""
@@ -692,18 +682,8 @@ class UserInterface(Dibbler.HTTPPlugin):
         # Convert platform-specific line endings into unix-style.
         content = content.replace('\r\n', '\n').replace('\r', '\n')
 
-        # Single message or mbox?
-        if content.startswith('From '):
-            # Get a list of raw messages from the mbox content.
-            class SimpleMessage:
-                def __init__(self, fp):
-                    self.guts = fp.read()
-            contentFile = StringIO.StringIO(content)
-            mbox = mailbox.PortableUnixMailbox(contentFile, SimpleMessage)
-            messages = map(lambda m: m.guts, mbox)
-        else:
-            # Just the one message.
-            messages = [content]
+        # The upload might be a single message or am mbox file.
+        messages = self._convertUploadToMessageList(content)
 
         # Append the message(s) to a file, to make it easier to rebuild
         # the database later.   This is a temporary implementation -
@@ -1135,7 +1115,7 @@ class State:
         self.numHams = 0
         self.numUnsure = 0
 
-        # Unique names for cached messages - see BayesProxy.onRetr
+        # Unique names for cached messages - see `getNewMessageName()` below.
         self.lastBaseMessageName = ''
         self.uniquifier = 2
 
@@ -1202,6 +1182,18 @@ class State:
             self.hamTrainer = storage.HamTrainer(self.bayes)
             self.spamCorpus.addObserver(self.spamTrainer)
             self.hamCorpus.addObserver(self.hamTrainer)
+
+    def getNewMessageName(self):
+        # The message name is the time it arrived, with a uniquifier
+        # appended if two arrive within one clock tick of each other.
+        messageName = "%10.10d" % long(time.time())
+        if messageName == self.lastBaseMessageName:
+            messageName = "%s-%d" % (messageName, self.uniquifier)
+            self.uniquifier += 1
+        else:
+            self.lastBaseMessageName = messageName
+            self.uniquifier = 2
+        return messageName
 
 
 # Option-parsing helper functions
