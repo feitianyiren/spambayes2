@@ -200,8 +200,7 @@ class FilterArrivalsDialog(dialog.Dialog):
             if not ids_are_list:
                 ids = [ids]
             single_select = not ids_are_list
-#            d = FolderSelector.FolderSelector(self.mgr.message_store.session, ids, checkbox_state=None, single_select=single_select)
-            d = FolderSelector.FolderSelector(self.mgr.outlook.Session, ids, checkbox_state=None, single_select=single_select)
+            d = FolderSelector.FolderSelector(self.mgr, ids, checkbox_state=None, single_select=single_select)
             if d.DoModal()==win32con.IDOK:
                 new_ids, include_sub = d.GetSelectedIDs()
                 if not ids_are_list:
@@ -341,8 +340,7 @@ class FilterNowDialog(AsyncDialogBase):
         if code == win32con.BN_CLICKED:
             import FolderSelector
             filter = self.mgr.config.filter_now
-            # d = FolderSelector.FolderSelector(self.mgr.message_store.session, filter.folder_ids,checkbox_state=filter.include_sub)
-            d = FolderSelector.FolderSelector(self.mgr.outlook.Session,
+            d = FolderSelector.FolderSelector(self.mgr,
                                               filter.folder_ids,
                                               checkbox_state=filter.include_sub)
             if d.DoModal() == win32con.IDOK:
