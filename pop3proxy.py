@@ -498,6 +498,13 @@ class BayesProxy(POP3ProxyBase):
             header = '%s: %s\r\n' % (options.hammie_header_name, disposition)
             headers, body = re.split(r'\n\r?\n', messageText, 1)
             headers = headers + "\n" + header + "\r\n"
+            
+            if options.pop3proxy_notate_to:
+                # add 'spam' as recip
+                tore = re.compile("^To: ", re.IGNORECASE | re.MULTILINE)
+                headers = re.sub(tore,"To: %s," % (disposition),
+                     headers)
+                
             messageText = headers + body
 
             # Cache the message; don't pollute the cache with test messages.
