@@ -51,6 +51,7 @@ Instructions:
       | $HOME/src/hammiefilter.py
 
       :0
+      * ^X-Spambayes-Classification: spam
       $HOME/Maildir/.spam/
 
     The above is for the maildir message format.  If you need mbox (the
