@@ -197,14 +197,6 @@ show_false_positives: True
 show_false_negatives: False
 show_unsure: False
 
-# Near the end of Driver.test(), you can get a listing of the best
-# discriminators in the words from the training sets.  These are the
-# words whose WordInfo.killcount values are highest, meaning they most
-# often were among the most extreme clues spamprob() found.  The number
-# of best discriminators to show is given by show_best_discriminators;
-# set this <= 0 to suppress showing any of the best discriminators.
-show_best_discriminators: 30
-
 # The maximum # of characters to display for a msg displayed due to the
 # show_xyz options above.
 show_charlimit: 3000
@@ -345,13 +337,12 @@ hammie_debug_header_name: X-Hammie-Debug
 # value, such as 0.1
 clue_mailheader_cutoff: 0.5
 
-# The default database path used by hammie
-persistent_storage_file: hammie.db
-
-# hammie can use either a database (quick to score one message) or a pickle
-# (quick to train on huge amounts of messages). Set this to True to use a
-# database by default.
-persistent_use_database: False
+[hammiefilter]
+# hammiefilter can use either a database (quick to score one message) or
+# a pickle (quick to train on huge amounts of messages). Set this to
+# True to use a database by default.
+hammiefilter_persistent_use_database: True
+hammiefilter_persistent_storage_file: ~/.hammiedb
 
 [pop3proxy]
 # pop3proxy settings - pop3proxy also respects the options in the Hammie
@@ -367,6 +358,8 @@ pop3proxy_cache_expiry_days: 7
 pop3proxy_spam_cache: pop3proxy-spam-cache
 pop3proxy_ham_cache: pop3proxy-ham-cache
 pop3proxy_unknown_cache: pop3proxy-unknown-cache
+pop3proxy_persistent_use_database: False
+pop3proxy_persistent_storage_file: hammie.db
 
 # Deprecated - use pop3proxy_servers and pop3proxy_ports instead.
 pop3proxy_server_name:
@@ -410,7 +403,6 @@ all_options = {
                    'show_unsure': boolean_cracker,
                    'show_histograms': boolean_cracker,
                    'percentiles': ('get', lambda s: map(float, s.split())),
-                   'show_best_discriminators': int_cracker,
                    'save_trained_pickles': boolean_cracker,
                    'save_histogram_pickles': boolean_cracker,
                    'pickle_basename': string_cracker,
@@ -435,7 +427,6 @@ all_options = {
                    'experimental_ham_spam_imbalance_adjustment': boolean_cracker,
                   },
     'Hammie': {'hammie_header_name': string_cracker,
-               'persistent_storage_file': string_cracker,
                'clue_mailheader_cutoff': float_cracker,
                'persistent_use_database': boolean_cracker,
                'header_spam_string': string_cracker,
@@ -446,6 +437,9 @@ all_options = {
                'hammie_debug_header': boolean_cracker,
                'hammie_debug_header_name': string_cracker,
                },
+    'hammiefilter' : {'hammiefilter_persistent_use_database': boolean_cracker,
+                      'hammiefilter_persistent_storage_file': string_cracker,
+                      },
     'pop3proxy': {'pop3proxy_servers': string_cracker,
                   'pop3proxy_ports': string_cracker,
                   'pop3proxy_server_name': string_cracker,
@@ -456,6 +450,8 @@ all_options = {
                   'pop3proxy_spam_cache': string_cracker,
                   'pop3proxy_ham_cache': string_cracker,
                   'pop3proxy_unknown_cache': string_cracker,
+                  'pop3proxy_persistent_use_database': boolean_cracker,
+                  'pop3proxy_persistent_storage_file': string_cracker,
                   },
     'html_ui': {'html_ui_port': int_cracker,
                 'html_ui_launch_browser': boolean_cracker,

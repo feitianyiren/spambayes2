@@ -1,34 +1,32 @@
 #! /usr/bin/env python
 
-'''Bayes.py - Spambayes database management framework.
+'''Persistent.py - Spambayes database management framework.
 
 Classes:
-    PersistentBayes - subclass of Bayes, adds auto persistence
-    PickledBayes - PersistentBayes that uses a pickle db
-    DBDictBayes - PersistentBayes that uses a (hammie.) DB_Dict db
-    Trainer - Bayes training observer
+    PersistentClassifier - subclass of Classifier, adds auto persistence
+    PickledClassifier - PersistentClassifier that uses a pickle db
+    DBDictClassifier - PersistentClassifier that uses a DBDict db
+    Trainer - Classifier training observer
     SpamTrainer - Trainer for spam
     HamTrainer - Trainer for ham
 
 Abstract:
-    PersistentBayes is an abstract subclass of Bayes (classifier.Bayes)
-    that adds automatic state store/restore function to the Bayes class.
+    PersistentClassifier is an abstract subclass of Classifier (classifier.Classifier)
+    that adds automatic state store/restore function to the Classifier class.
     It also adds a convenience method, which should probably
-    more properly be defined in Bayes: classify, which returns
+    more properly be defined in Classifier: classify, which returns
     'spam'|'ham'|'unsure' for a message based on the spamprob against
     the ham_cutoff and spam_cutoff specified in Options.
 
-    PickledBayes is a concrete PersistentBayes class that uses a cPickle
+    PickledClassifier is a concrete PersistentClassifier class that uses a cPickle
     datastore.  This database is relatively small, but slower than other
     databases.
 
-    DBDictBayes is a concrete PersistentBayes class that uses a DB_Dict
-    datastore.  DB_Dict is currently definied in hammie.py, and wraps
-    an anydbm with some very convenient dictionary functionality, such as
-    the ability to skip particular keys or key patterns during iteration.
+    DBDictClassifier is a concrete PersistentClassifier class that uses a DBDict
+    datastore.
 
     Trainer is concrete class that observes a Corpus and trains a
-    Bayes object based upon movement of messages between corpora  When
+    Classifier object based upon movement of messages between corpora  When
     an add message notification is received, the trainer trains the
     database with the message, as spam or ham as appropriate given the
     type of trainer (spam or ham).  When a remove message notification
@@ -38,11 +36,9 @@ Abstract:
     initialize as the appropriate type of Trainer
 
 To Do:
-    o ZODBBayes
+    o ZODBClassifier
     o Would Trainer.trainall really want to train with the whole corpus,
-      or just a random subset?
-    o Corpus.Verbose is a bit of a strange thing to have.  Verbose should be
-      in the global namespace, but how do you get it there?
+        or just a random subset?
     o Suggestions?
 
     '''
@@ -52,29 +48,26 @@ To Do:
 # Foundation license.
 
 __author__ = "Tim Stone <tim@fourstonesExpressions.com>"
-__credits__ = "Richie Hindle, Tim Peters, Neil Gunton, \
+__credits__ = "Richie Hindle, Tim Peters, Neale Pickett, \
 all the spambayes contributors."
 
-import Corpus
-from classifier import Bayes
+import classifier
 from Options import options
-from hammie import DBDict     # hammie only for DBDict, which should
-                              # probably really be somewhere else
 import cPickle as pickle
+import dbdict
 import errno
-import copy
-import anydbm
 
 PICKLE_TYPE = 1
 NO_UPDATEPROBS = False   # Probabilities will not be autoupdated with training
 UPDATEPROBS = True       # Probabilities will be autoupdated with training
 
-class PersistentBayes(Bayes):
-    '''Persistent Bayes database object'''
+class PersistentClassifier(classifier.Classifier):
+    '''Persistent Classifier database object'''
 
     def __init__(self, db_name):
         '''Constructor(database name)'''
 
+        classifier.Classifier.__init__(self)
         self.db_name = db_name
         self.load()
 
@@ -105,17 +98,17 @@ class PersistentBayes(Bayes):
         return type
 
 
-class PickledBayes(PersistentBayes):
-    '''Bayes object persisted in a pickle'''
+class PickledClassifier(PersistentClassifier):
+    '''Classifier object persisted in a pickle'''
 
     def load(self):
         '''Load this instance from the pickle.'''
         # This is a bit strange, because the loading process
-        # creates a temporary instance of PickledBayes, from which
+        # creates a temporary instance of PickledClassifier, from which
         # this object's state is copied.  This is a nuance of the way
         # that pickle does its job
 
-        if Corpus.Verbose:
+        if False and __debug__:
             print 'Loading state from',self.db_name,'pickle'
 
         tempbayes = None
@@ -129,24 +122,24 @@ class PickledBayes(PersistentBayes):
 
         if tempbayes:
             self.wordinfo = tempbayes.wordinfo
-            self.nham = tempbayes.nham
-            self.nspam = tempbayes.nspam
+            self.meta.nham = tempbayes.get_nham()
+            self.meta.nspam = tempbayes.get_nspam()
 
-            if Corpus.Verbose:
+            if False and __debug__:
                 print '%s is an existing pickle, with %d ham and %d spam' \
                       % (self.db_name, self.nham, self.nspam)
         else:
             # new pickle
-            if Corpus.Verbose:
+            if False and __debug__:
                 print self.db_name,'is a new pickle'
             self.wordinfo = {}
-            self.nham = 0
-            self.nspam = 0
+            self.meta.nham = 0
+            self.meta.nspam = 0
 
     def store(self):
         '''Store self as a pickle'''
 
-        if Corpus.Verbose:
+        if False and __debug__:
             print 'Persisting',self.db_name,'as a pickle'
 
         fp = open(self.db_name, 'wb')
@@ -154,72 +147,67 @@ class PickledBayes(PersistentBayes):
         fp.close()
 
     def __getstate__(self):
-        '''State requested by pickler'''
-
-        return PICKLE_TYPE, self.wordinfo, self.nspam, self.nham
+        return PICKLE_TYPE, self.wordinfo, self.meta
 
     def __setstate__(self, t):
-        '''State provided by pickler'''
-        # This can be confusing, because self in this method
-        # is not the same instance as self in the load() method
-
         if t[0] != PICKLE_TYPE:
             raise ValueError("Can't unpickle -- version %s unknown" % t[0])
+        self.wordinfo, self.meta = t[1:]
 
-        self.wordinfo, self.nspam, self.nham = t[1:]
 
+class DBDictClassifier(PersistentClassifier):
+    '''Classifier object persisted in a WIDict'''
 
-class DBDictBayes(PersistentBayes):
-    '''Bayes object persisted in a hammie.DB_Dict'''
-
-    def __init__(self, db_name):
+    def __init__(self, db_name, mode='c'):
         '''Constructor(database name)'''
 
-        self.db_name = db_name
+        self.mode = mode
         self.statekey = "saved state"
-
-        self.load()
+        PersistentClassifier.__init__(self, db_name)
 
     def load(self):
-        '''Load state from DB_Dict'''
+        '''Load state from WIDict'''
 
-        if Corpus.Verbose:
-            print 'Loading state from',self.db_name,'DB_Dict'
+        if False and __debug__:
+            print 'Loading state from',self.db_name,'WIDict'
 
-        self.wordinfo = DBDict(self.db_name, 'c')
+        self.wordinfo = dbdict.DBDict(self.db_name, self.mode,
+                             classifier.WordInfo,iterskip=[self.statekey])
 
         if self.wordinfo.has_key(self.statekey):
+            (nham, nspam) = self.wordinfo[self.statekey]
+            self.set_nham(nham)
+            self.set_nspam(nspam)
 
-            self.nham, self.nspam = self.wordinfo[self.statekey]
-            if Corpus.Verbose:
+            if False and __debug__:
                 print '%s is an existing DBDict, with %d ham and %d spam' \
                       % (self.db_name, self.nham, self.nspam)
         else:
             # new dbdict
-            if Corpus.Verbose:
+            if False and __debug__:
                 print self.db_name,'is a new DBDict'
-            self.nham = 0
-            self.nspam = 0
+            self.set_nham(0)
+            self.set_nspam(0)
 
     def store(self):
         '''Place state into persistent store'''
 
-        if Corpus.Verbose:
-            print 'Persisting',self.db_name,'state in DBDict'
+        if False and __debug__:
+            print 'Persisting',self.db_name,'state in WIDict'
 
-        self.wordinfo[self.statekey] = (self.nham, self.nspam)
+        self.wordinfo[self.statekey] = (self.get_nham(), self.get_nspam())
+        self.wordinfo.sync()
 
 
 class Trainer:
-    '''Associates a Bayes object and one or more Corpora, \
+    '''Associates a Classifier object and one or more Corpora, \
     is an observer of the corpora'''
 
-    def __init__(self, bayes, trainertype, updateprobs=NO_UPDATEPROBS):
-        '''Constructor(Bayes, \
-                       Corpus.SPAM|Corpus.HAM), updprobs(True|False)'''
+    def __init__(self, bayes, is_spam, updateprobs=NO_UPDATEPROBS):
+        '''Constructor(Classifier, is_spam(True|False), updprobs(True|False)'''
 
         self.bayes = bayes
-        self.trainertype = trainertype
+        self.is_spam = is_spam
         self.updateprobs = updateprobs
 
     def onAddMessage(self, message):
@@ -230,12 +218,11 @@ class Trainer:
     def train(self, message):
         '''Train the database with the message'''
 
-        if Corpus.Verbose:
+        if False and __debug__:
             print 'training with',message.key()
 
-        self.bayes.learn(message.tokenize(), \
-                         self.trainertype, \
-                         self.updateprobs)
+        self.bayes.learn(message.tokenize(), self.is_spam)
+#                         self.updateprobs)
 
     def onRemoveMessage(self, message):
         '''A message is being removed from an observed corpus.'''
@@ -245,12 +232,11 @@ class Trainer:
     def untrain(self, message):
         '''Untrain the database with the message'''
 
-        if Corpus.Verbose:
+        if False and __debug__:
             print 'untraining with',message.key()
 
-        self.bayes.unlearn(message.tokenize(), \
-                           self.trainertype, \
-                           self.updateprobs)
+        self.bayes.unlearn(message.tokenize(), self.is_spam)
+#                           self.updateprobs)
         # can raise ValueError if database is fouled.  If this is the case,
         # then retraining is the only recovery option.
 
@@ -273,7 +259,7 @@ class SpamTrainer(Trainer):
     def __init__(self, bayes, updateprobs=NO_UPDATEPROBS):
         '''Constructor'''
 
-        Trainer.__init__(self, bayes, Corpus.SPAM, updateprobs)
+        Trainer.__init__(self, bayes, True, updateprobs)
 
 
 class HamTrainer(Trainer):
@@ -282,7 +268,7 @@ class HamTrainer(Trainer):
     def __init__(self, bayes, updateprobs=NO_UPDATEPROBS):
         '''Constructor'''
 
-        Trainer.__init__(self, bayes, Corpus.HAM, updateprobs)
+        Trainer.__init__(self, bayes, False, updateprobs)
 
 
 if __name__ == '__main__':

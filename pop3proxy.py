@@ -118,7 +118,7 @@ Gimmicks:
 
 import os, sys, re, operator, errno, getopt, string, cStringIO, time, bisect
 import socket, asyncore, asynchat, cgi, urlparse, webbrowser
-import Bayes, tokenizer, mboxutils
+import Persistent, tokenizer, mboxutils
 from FileCorpus import FileCorpus, FileMessageFactory, GzipFileMessageFactory
 from email.Iterators import typed_subpart_iterator
 from Options import options
@@ -818,6 +818,9 @@ class UserInterface(BrighterAsyncChat):
         """Serve up the homepage."""
         stateDict = state.__dict__
         stateDict.update(state.bayes.__dict__)
+        # so the property() isn't as cool as we thought.  -ntp
+        stateDict['nham'] = state.bayes.nham
+        stateDict['nspam'] = state.bayes.nspam
         body = (self.pageSection % ('Status', self.summary % stateDict)+
                 self.pageSection % ('Train on proxied messages', self.review)+
                 self.pageSection % ('Train on a given message', self.train)+
@@ -1118,7 +1121,7 @@ class UserInterface(BrighterAsyncChat):
 
 # This keeps the global state of the module - the command-line options,
 # statistics like how many mails have been classified, the handle of the
-# log file, the Bayes and FileCorpus objects, and so on.
+# log file, the Classifier and FileCorpus objects, and so on.
 class State:
     def __init__(self):
         """Initialises the State object that holds the state of the app.
@@ -1161,8 +1164,8 @@ class State:
             sys.exit()
 
         # Load up the other settings from Option.py / bayescustomize.ini
-        self.databaseFilename = options.persistent_storage_file
-        self.useDB = options.persistent_use_database
+        self.databaseFilename = options.pop3proxy_persistent_storage_file
+        self.useDB = options.pop3proxy_persistent_use_database
         self.uiPort = options.html_ui_port
         self.launchUI = options.html_ui_launch_browser
         self.gzipCache = options.pop3proxy_cache_use_gzip
@@ -1199,9 +1202,9 @@ class State:
         if self.isTest:
             self.databaseFilename = '_pop3proxy_test.pickle'   # Never saved
         if self.useDB:
-            self.bayes = Bayes.DBDictBayes(self.databaseFilename)
+            self.bayes = Persistent.DBDictClassifier(self.databaseFilename)
         else:
-            self.bayes = Bayes.PickledBayes(self.databaseFilename)
+            self.bayes = Persistent.PickledClassifier(self.databaseFilename)
         print "Done."
 
         # Don't set up the caches and training objects when running the self-test,
@@ -1226,8 +1229,8 @@ class State:
             self.unknownCorpus = FileCorpus(messageFactory, self.unknownCache)
 
             # Create the Trainers.
-            self.spamTrainer = Bayes.SpamTrainer(self.bayes)
-            self.hamTrainer = Bayes.HamTrainer(self.bayes)
+            self.spamTrainer = Persistent.SpamTrainer(self.bayes)
+            self.hamTrainer = Persistent.HamTrainer(self.bayes)
             self.spamCorpus.addObserver(self.spamTrainer)
             self.hamCorpus.addObserver(self.hamTrainer)
 

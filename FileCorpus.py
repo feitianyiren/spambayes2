@@ -85,7 +85,7 @@ __credits__ = "Richie Hindle, Tim Peters, all the spambayes contributors."
 from __future__ import generators
 
 import Corpus
-import Bayes
+import Persistent
 import sys, os, gzip, fnmatch, getopt, errno, time, stat
 
 class FileCorpus(Corpus.Corpus):
@@ -191,6 +191,7 @@ class FileMessage(Corpus.Message):
     def __init__(self,file_name, directory):
         '''Constructor(message file name, corpus directory name)'''
 
+        Corpus.Message.__init__(self)
         self.file_name = file_name
         self.directory = directory
         self.load()
@@ -213,7 +214,7 @@ class FileMessage(Corpus.Message):
             if e.errno != errno.ENOENT:
                raise
         else:
-           self.substance = fp.read()
+           self.setSubstance(fp.read())
            fp.close()
 
     def store(self):
@@ -224,7 +225,7 @@ class FileMessage(Corpus.Message):
 
         pn = self.pathname()
         fp = open(pn, 'wb')
-        fp.write(self.substance)
+        fp.write(self.getSubstance())
         fp.close()
 
     def remove(self):
@@ -247,15 +248,15 @@ class FileMessage(Corpus.Message):
         '''Instance as a representative string'''
 
         elip = ''
-        sub = self.substance
-
+        sub = self.getSubstance()
+        
         if Corpus.Verbose:
-            sub = self.substance
+            sub = self.getSubstance()
         else:
-            if len(self.substance) > 20:
-                sub = self.substance[:20]
-                if len(self.substance) > 40:
-                    sub += '...' + self.substance[-20:]
+            if len(sub) > 20:
+                sub = sub[:20]
+                if len(sub) > 40:
+                    sub += '...' + sub[-20:]
 
         pn = os.path.join(self.directory, self.file_name)
 
@@ -303,7 +304,7 @@ class GzipFileMessage(FileMessage):
             if e.errno != errno.ENOENT:
                 raise
         else:
-            self.substance = fp.read()
+            self.setSubstance(fp.read())
             fp.close()
 
 
@@ -315,7 +316,7 @@ class GzipFileMessage(FileMessage):
 
         pn = self.pathname()
         gz = gzip.open(pn, 'wb')
-        gz.write(self.substance)
+        gz.write(self.getSubstance())
         gz.flush()
         gz.close()
 
@@ -341,15 +342,15 @@ def runTest(useGzip):
         fmFact =  FileMessageFactory()
         print 'Executing with uncompressed files'
 
-    print '\n\nCreating two Bayes databases'
-    miscbayes = Bayes.PickledBayes('fctestmisc.bayes')
-    classbayes = Bayes.DBDictBayes('fctestclass.bayes')
+    print '\n\nCreating two Classifier databases'
+    miscbayes = Persistent.PickledClassifier('fctestmisc.bayes')
+    classbayes = Persistent.DBDictClassifier('fctestclass.bayes')
 
     print '\n\nSetting up spam corpus'
     spamcorpus = FileCorpus(fmFact, 'fctestspamcorpus')
-    spamtrainer = Bayes.SpamTrainer(miscbayes)
+    spamtrainer = Persistent.SpamTrainer(miscbayes)
     spamcorpus.addObserver(spamtrainer)
-    anotherspamtrainer = Bayes.SpamTrainer(classbayes, Bayes.UPDATEPROBS)
+    anotherspamtrainer = Persistent.SpamTrainer(classbayes, Persistent.UPDATEPROBS)
     spamcorpus.addObserver(anotherspamtrainer)
 
     keys = spamcorpus.keys()
@@ -364,18 +365,20 @@ def runTest(useGzip):
     hamcorpus = FileCorpus(fmFact, \
                           'fctesthamcorpus', \
                           'MSG*')
-    hamtrainer = Bayes.HamTrainer(miscbayes)
+    hamtrainer = Persistent.HamTrainer(miscbayes)
     hamcorpus.addObserver(hamtrainer)
     hamtrainer.trainAll(hamcorpus)
 
-
-    print '\n\nAdd a message to hamcorpus that does not match the filter'
+    print '\n\nA couple of message related tests'
     if useGzip:
         fmClass = GzipFileMessage
     else:
         fmClass = FileMessage
 
     m1 = fmClass('XMG00001', 'fctestspamcorpus')
+    m1.setSubstance(testmsg2())
+    
+    print '\n\nAdd a message to hamcorpus that does not match the filter'
 
     try:
         hamcorpus.addMessage(m1)
@@ -416,7 +419,7 @@ We should not see MSG00003 in this iteration.'
 
 
     print '\n\nTrain with an individual message'
-    anotherhamtrainer = Bayes.HamTrainer(classbayes)
+    anotherhamtrainer = Persistent.HamTrainer(classbayes)
     anotherhamtrainer.train(unsurecorpus['MSG00005'])
 
 
@@ -427,6 +430,15 @@ We should not see MSG00003 in this iteration.'
     print "\n\nLet's test printing a message"
     msg = spamcorpus['MSG00001']
     print msg
+    print '\n\nThis is some vital information in the message'
+    print 'Date header is',msg.getDate()
+    print 'Subject header is',msg.getSubject()
+    print 'From header is',msg.getFrom()
+    
+    print 'Header text is:',msg.getHeaders()
+    print 'Headers are:',msg.getHeadersList()
+    print 'Body is:',msg.getPayload()
+
 
 
     print '\n\nClassifying messages in unsure corpus'
@@ -525,15 +537,15 @@ def setupTest(useGzip):
         fmClass = FileMessage
 
     m1 = fmClass('MSG00001', 'fctestspamcorpus')
-    m1.substance = tm1
+    m1.setSubstance(tm1)
     m1.store()
 
     m2 = fmClass('MSG00002', 'fctestspamcorpus')
-    m2.substance = tm2
+    m2.setSubstance(tm2)
     m2.store()
 
     m3 = fmClass('MSG00003', 'fctestunsurecorpus')
-    m3.substance = tm1
+    m3.setSubstance(tm1)
     m3.store()
 
     for x in range(11):
@@ -545,15 +557,15 @@ def setupTest(useGzip):
        print 'wait',10-x,'more second%s' % (s)
 
     m4 = fmClass('MSG00004', 'fctestunsurecorpus')
-    m4.substance = tm1
+    m4.setSubstance(tm1)
     m4.store()
 
     m5 = fmClass('MSG00005', 'fctestunsurecorpus')
-    m5.substance = tm2
+    m5.setSubstance(tm2)
     m5.store()
 
     m6 = fmClass('MSG00006', 'fctestunsurecorpus')
-    m6.substance = tm2
+    m6.setSubstance(tm2)
     m6.store()
 
 
@@ -582,7 +594,6 @@ From:Skip Montanaro <skip@pobox.com>
 MIME-Version:1.0
 Content-Type:text/plain; charset=us-ascii
 Content- Transfer- Encoding:7bit
-
 Message-ID:<15814.42238.882013.702030@montanaro.dyndns.org>
 Date:Mon, 4 Nov 2002 10:49:02 -0600
 To:Four Stones Expressions <tim@fourstonesExpressions.com>
@@ -643,7 +654,6 @@ X-Mailer:Forte Agent 1.7/32.534
 MIME-Version:1.0
 Content-Type:text/plain; charset=us-ascii
 Content- Transfer- Encoding:7bit
-
 X-Hammie- Disposition:Unsure
 
 

@@ -304,22 +304,6 @@ class Driver:
             prob, clues = c.spamprob(e, True)
             printmsg(e, prob, clues)
 
-        if options.show_best_discriminators > 0:
-            print
-            print "    best discriminators:"
-            stats = [(-1, None)] * options.show_best_discriminators
-            smallest_killcount = -1
-            for w, r in c.wordinfo.iteritems():
-                if r.killcount > smallest_killcount:
-                    heapreplace(stats, (r.killcount, w))
-                    smallest_killcount = stats[0][0]
-            stats.sort()
-            for count, w in stats:
-                if count < 0:
-                    continue
-                r = c.wordinfo[w]
-                print "        %r %d %g" % (w, r.killcount, r.spamprob)
-
         if options.show_histograms:
             printhist("this pair:", local_ham_hist, local_spam_hist)
         self.trained_ham_hist += local_ham_hist
