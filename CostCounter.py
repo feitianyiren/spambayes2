@@ -94,19 +94,25 @@ class CountCostCounter(CostCounter):
     def __str__(self):
          return ("Total messages: %d; %d (%.1f%%) ham + %d (%.1f%%) spam\n"%(
                      self._total,
-                     self._ham, (100.*self._ham)/self._total,
-                     self._spam, (100.*self._spam)/self._total)+
+                     self._ham, zd(100.*self._ham,self._total),
+                     self._spam, zd(100.*self._spam,self._total))+
                  "Ham: %d (%.2f%%) ok, %d (%.2f%%) unsure, %d (%.2f%%) fp\n"%(
-                     self._correctham, (100.*self._correctham)/self._ham,
-                     self._unsureham, (100.*self._unsureham)/self._ham,
-                     self._fp, (100.*self._fp)/self._ham)+
+                     self._correctham, zd(100.*self._correctham,self._ham),
+                     self._unsureham, zd(100.*self._unsureham,self._ham),
+                     self._fp, zd(100.*self._fp,self._ham))+
                  "Spam: %d (%.2f%%) ok, %d (%.2f%%) unsure, %d (%.2f%%) fn\n"%(
-                     self._correctspam, (100.*self._correctspam)/self._spam,
-                     self._unsurespam, (100.*self._unsurespam)/self._spam,
-                     self._fn, (100.*self._fn)/self._spam)+
+                     self._correctspam, zd(100.*self._correctspam,self._spam),
+                     self._unsurespam, zd(100.*self._unsurespam,self._spam),
+                     self._fn, zd(100.*self._fn,self._spam))+
                  "Score False: %.2f%% Unsure %.2f%%"%(
-                     (100.*(self._fp+self._fn))/self._total,
-                     (100.*self._unsure)/self._total))
+                     zd(100.*(self._fp+self._fn),self._total),
+                     zd(100.*self._unsure,self._total)))
+
+def zd(x,y):
+    if y > 0:
+       return x / y
+    else:
+       return 0
 
 class StdCostCounter(CostCounter):
     name = "Standard Cost"
