@@ -122,7 +122,7 @@ def main():
     """Main program; parse options and go."""
 
     global loud
-    
+
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hfqd:D:s:e:')
     except getopt.error, msg:
@@ -195,17 +195,17 @@ def main():
             # Figure out how old the message is
             age = 2 * expire
             try:
-                 received = (msg.get_all("Received"))[0]
-                 received = date_re.search(received).group(1)
-                 # if loud: print "  %s" % received
-                 date = time.mktime(time.strptime(received, "%d %b %Y"))
-                 # if loud: print "  %d" % date
-                 age = (now - date) // day
-                 # Can't just continue here... we're in a try
-                 if age < 0:
-                     age = 2 * expire
+                received = (msg.get_all("Received"))[0]
+                received = date_re.search(received).group(1)
+                # if loud: print "  %s" % received
+                date = time.mktime(time.strptime(received, "%d %b %Y"))
+                # if loud: print "  %d" % date
+                age = (now - date) // day
+                # Can't just continue here... we're in a try
+                if age < 0:
+                    age = 2 * expire
             except:
-                 pass
+                pass
             # Skip anything that has no date or is too old or from the future
             # if loud: print "%s: %d" % (name, age)
             if age >= expire:
@@ -242,7 +242,7 @@ def main():
                 if loud and not (hamcount % 100):
                     sys.stdout.write("h")
                     sys.stdout.flush()
-            
+
             h.train(msg, isspam)
 
     if loud:

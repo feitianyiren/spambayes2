@@ -288,7 +288,7 @@ class Classifier:
 
         spamcount = record.spamcount
         hamcount = record.hamcount
-        
+
         # Try the cache first
         try:
             return self.probcache[spamcount][hamcount]
@@ -457,7 +457,7 @@ class Classifier:
 
     def _wordinfodel(self, word):
         del self.wordinfo[word]
-        
+
 
 
 Bayes = Classifier

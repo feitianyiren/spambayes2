@@ -199,7 +199,7 @@ def main():
             print "Untraining spam (%s):" % s
             untrain(h, s, True)
             save = True
-        
+
     if save:
         h.store()
 

@@ -263,7 +263,7 @@ class Listener(asyncore.dispatcher):
         self.set_socket(s, self.socketMap)
         self.set_reuse_addr()
         if type(port) != type(()):
-          port = ('', port)
+            port = ('', port)
         self.bind(port)
         self.listen(5)
 

@@ -1206,20 +1206,20 @@ class State:
 
 # Option-parsing helper functions
 def _addressAndPort(s):
-   """Decode a string representing a port to bind to, with optional address."""
-   s = s.strip()
-   if ':' in s:
-     addr, port = s.split(':')
-     return addr, int(port)
-   else:
-     return '', int(s)
+    """Decode a string representing a port to bind to, with optional address."""
+    s = s.strip()
+    if ':' in s:
+        addr, port = s.split(':')
+        return addr, int(port)
+    else:
+        return '', int(s)
 
 def _addressPortStr((addr, port)):
-  """Encode a string representing a port to bind to, with optional address."""
-  if not addr:
-    return str(port)
-  else:
-    return '%s:%d' % (addr, port)
+    """Encode a string representing a port to bind to, with optional address."""
+    if not addr:
+        return str(port)
+    else:
+        return '%s:%d' % (addr, port)
 
 
 state = State()

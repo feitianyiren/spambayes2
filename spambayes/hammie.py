@@ -17,7 +17,7 @@ class Hammie:
     """A spambayes mail filter.
 
     This implements the basic functionality needed to score, filter, or
-    train.  
+    train.
 
     """
 

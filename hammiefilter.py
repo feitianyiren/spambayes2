@@ -7,7 +7,7 @@
 ##
 ##   :0 fw
 ##   | hammiefilter.py
-## 
+##
 ## Then, you can set up your MUA to pipe ham and spam to it, one at a
 ## time, by calling it with either the -g or -s options, respectively.
 ##
@@ -176,4 +176,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
