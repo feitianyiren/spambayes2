@@ -50,7 +50,6 @@ import cPickle as pickle
 from Options import options
 import mboxutils
 import classifier
-import storage
 import hammie
 import Corpus
 

@@ -14,9 +14,9 @@
 ## Author: Neale Pickett <neale@woozle.org>
 ##
 
-"""Usage: %(program)s [option]
+"""Usage: %(program)s [OPTION]
 
-Where [option] is one of:
+Where [OPTION] is one of:
     -h
         show usage and exit
     -n
@@ -25,6 +25,12 @@ Where [option] is one of:
         train on stdin as a good (ham) message
     -s
         train on stdin as a bad (spam) message
+    -G
+        untrain ham on stdin -- only use if you've already trained this
+        message!
+    -S
+        untrain spam on stdin -- only use if you've already trained this
+        message!
 
 If neither -g nor -s is given, stdin will be scored: the same message,
 with a new header containing the score, will be send to stdout.
@@ -82,6 +88,18 @@ class HammieFilter(object):
         h = hammie.open(self.dbname, self.usedb, 'c')
         msg = sys.stdin.read()
         h.train_spam(msg)
+        h.store()
+
+    def untrain_ham(self):
+        h = hammie.open(self.dbname, self.usedb, 'c')
+        msg = sys.stdin.read()
+        h.untrain_ham(msg)
+        h.store()
+
+    def untrain_spam(self):
+        h = hammie.open(self.dbname, self.usedb, 'c')
+        msg = sys.stdin.read()
+        h.untrain_spam(msg)
         h.store()
 
 def main():

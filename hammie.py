@@ -129,6 +129,17 @@ class Hammie:
 
         self.bayes.learn(tokenize(msg), is_spam)
 
+    def untrain(self, msg, is_spam):
+        """Untrain bayes with a message.
+
+        msg can be a string, a file object, or a Message object.
+
+        is_spam should be 1 if the message is spam, 0 if not.
+
+        """
+
+        self.bayes.unlearn(tokenize(msg), is_spam)
+
     def train_ham(self, msg):
         """Train bayes with ham.
 
@@ -146,6 +157,24 @@ class Hammie:
         """
 
         self.train(msg, True)
+
+    def untrain_ham(self, msg):
+        """Untrain bayes with ham.
+
+        msg can be a string, a file object, or a Message object.
+
+        """
+
+        self.untrain(msg, False)
+
+    def train_spam(self, msg):
+        """Untrain bayes with spam.
+
+        msg can be a string, a file object, or a Message object.
+
+        """
+
+        self.untrain(msg, True)
 
     def store(self):
         """Write out the persistent store.

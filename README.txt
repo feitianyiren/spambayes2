@@ -63,16 +63,19 @@ Apps
 hammie.py
     A spamassassin-like filter which uses tokenizer and classifier (above).
 
-hammiesrv.py
-    A first stab at making hammie into a client/server model, using
-    XML-RPC.
-
-hammiecli.py
-    A client for hammiesrv.
-
 hammiefilter.py
     A simpler hammie front-end that doesn't print anything.  Useful for
     procmail filering and scoring from your MUA.
+
+mboxtrain.py
+    Trainer for Maildir, MH, or mbox mailboxes.  Remembers which
+    messages it saw the last time you ran it, and will only train on new
+    messages or messages which should be retrained.  
+
+    The idea is to run this automatically every night on your Inbox and
+    Spam folders, and then sort misclassified messages by hand.  This
+    will work with any IMAP4 mail client, or any client running on the
+    server.
 
 pop3proxy.py
     A spam-classifying POP3 proxy.  It adds a spam-judgement header to
@@ -90,6 +93,12 @@ mailsort.py
     a message to one of two Maildir message folders, depending on the
     classifier score.  Note that both Maildirs must be on the same
     device.
+
+hammiesrv.py
+    A stab at making hammie into a client/server model, using XML-RPC.
+
+hammiecli.py
+    A client for hammiesrv.
 
 
 Test Driver Core
