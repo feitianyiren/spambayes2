@@ -386,6 +386,7 @@ class ExplorerWithEvents:
         self.manager = manager
         self.have_setup_ui = False
         self.explorer_list = explorer_list
+        self.buttons = []
 
     def SetupUI(self):
         manager = self.manager
