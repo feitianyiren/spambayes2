@@ -115,8 +115,11 @@ CVS commit messages go to the list <a href="http://mail.python.org/mailman-21/li
 <h2>Credits</h2>
 <p>Most of the heavy lifting on this project was done by Tim Peters, with
 the cast of spambayes obsessive-compulsives providing ideas, heckling, and
-testing. Gary Robinson and Rob Hooft contributed valuable help on the maths
-behind it all. Mark Hammond amazed the world with the Outlook2000 plug-in,
+testing. Gary Robinson provided a lot of the serious maths and theory, as
+well as his essay on "how to do it better" (see the 
+<a href="background.html">background</a> page for a link). Rob Hooft 
+also contributed maths/stats clues.
+Mark Hammond amazed the world with the Outlook2000 plug-in,
 and Rich Hindle, Neale Pickett, Tim Stone worked on the end-user applications.</p>
-<p>Thanks also to Rachel Holkner for turning Anthony's gibberish into something
-closer to actual English, although all mistakes are Anthony's.</p>
+<p>(Thanks also to Rachel Holkner for turning Anthony's gibberish into something
+closer to actual English, although all mistakes are Anthony's.)</p>
