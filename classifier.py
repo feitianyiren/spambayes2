@@ -138,6 +138,7 @@ class Classifier:
         if t[0] != PICKLE_VERSION:
             raise ValueError("Can't unpickle -- version %s unknown" % t[0])
         self.wordinfo, self.meta = t[1:]
+        self.probcache = {}
 
     # Slacker's way out--pass calls to nham/nspam up to the meta class
 
