@@ -45,6 +45,7 @@ Usage:
         options:
             -e     : export
             -i     : import
+            -v     : verbose mode (some additional diagnostic messages)
             -f: FN : flat file to export to or import from
             -d: FN : name of pickled database file to use
             -D: FN : name of dbm database file to use
@@ -57,25 +58,25 @@ Usage:
 
 Examples:
 
-    dbExpImp -e -d mybayes.db -f mybayes.db.export
-        Exports pickled mybayes.db into mybayes.db.export as a csv flat file
+    Export pickled mybayes.db into mybayes.db.export as a csv flat file
+        dbExpImp -e -d mybayes.db -f mybayes.db.export
         
-    dbExpImp -i -D mybayes.db -f mybayes.db.export
-        Imports mybayes.eb.export into a new DBM mybayes.db
+    Import mybayes.eb.export into a new DBM mybayes.db
+        dbExpImp -i -D mybayes.db -f mybayes.db.export
+       
+    Export, then import (reorganize) new pickled mybayes.db
+        dbExpImp -e -i -n -d mybayes.db -f mybayes.db.export
         
-    dbExpImp -e -i -n -d mybayes.db -f mybayes.db.export
-        Exports then imports (reorganizes) new pickled mybayes.db
+    Convert a bayes database from pickle to DBM
+        dbExpImp -e -d abayes.db -f abayes.export
+        dbExpImp -i -D abayes.db -f abayes.export
         
-    dbExpImp -e -d abayes.db -f abayes.export
-    dbExpImp -i -D abayes.db -f abayes.export
-        Converts a bayes database from pickle to DBM
-        
-    dbExpImp -e -d abayes.db -f abayes.export
-    dbExpImp -e -d bbayes.db -f bbayes.export
-    dbExpImp -i -d newbayes.db -f abayes.export
-    dbExpImp -i -m -d newbayes.db -f bbayes.export
-        Creates a new database (newbayes.db) from two
+    Create a new database (newbayes.db) from two
         databases (abayes.db, bbayes.db)
+        dbExpImp -e -d abayes.db -f abayes.export
+        dbExpImp -e -d bbayes.db -f bbayes.export
+        dbExpImp -i -d newbayes.db -f abayes.export
+        dbExpImp -i -m -d newbayes.db -f bbayes.export
 
 To Do:
     o Suggestions?
@@ -91,6 +92,7 @@ __author__ = "Tim Stone <tim@fourstonesExpressions.com>"
 from __future__ import generators
 
 import storage
+from spambayes.Options import options
 import sys, os, getopt, errno, re
 import urllib
 
@@ -99,8 +101,11 @@ def runExport(dbFN, useDBM, outFN):
     print "running export on %s" % (dbFN)
     if useDBM:
         bayes = storage.DBDictClassifier(dbFN)
+        words = bayes.db.keys()
+        words.remove(bayes.statekey)
     else:
         bayes = storage.PickledClassifier(dbFN)
+        words = bayes.wordinfo.keys()
 
     try:
         fp = open(outFN, 'w')
@@ -114,9 +119,10 @@ def runExport(dbFN, useDBM, outFN):
     
     fp.write("%s,%s,\n" % (nham, nspam))
     
-    for word in bayes.wordinfo:
-        hamcount = bayes.wordinfo[word].hamcount
-        spamcount = bayes.wordinfo[word].spamcount
+    for word in words:
+        wi = bayes._wordinfoget(word)
+        hamcount = wi.hamcount
+        spamcount = wi.spamcount
         word = urllib.quote(word)
         fp.write("%s`%s`%s`\n" % (word, hamcount, spamcount))
         
@@ -176,7 +182,7 @@ def runImport(dbFN, useDBM, newDBM, inFN):
 if __name__ == '__main__':
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'iehmd:D:f:')
+        opts, args = getopt.getopt(sys.argv[1:], 'iehmvd:D:f:')
     except getopt.error, msg:
         print >>sys.stderr, str(msg) + '\n\n' + __doc__
         sys.exit()
@@ -207,6 +213,8 @@ if __name__ == '__main__':
             imp = True
         elif opt == '-m':
             newDBM = False
+        elif opt == '-v':
+            options.verbose = True
 
     if (dbFN and flatFN):
         if exp:
