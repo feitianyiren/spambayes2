@@ -166,11 +166,11 @@ def runImport(dbFN, useDBM, newDBM, inFN):
     (nham, nspam, junk) = re.split(',', nline)
  
     if newDBM:
-        bayes.nham = nham
-        bayes.nspam = nspam
+        bayes.nham = int(nham)
+        bayes.nspam = int(nspam)
     else:
-        bayes.nham += nham
-        bayes.nspam += nspam
+        bayes.nham += int(nham)
+        bayes.nspam += int(nspam)
     
     if newDBM:
         impType = "Importing"
