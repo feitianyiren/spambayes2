@@ -70,7 +70,7 @@ class TrainingDialog(AsyncDialogBase):
         # If we have no known ham folders, suggest the Inbox.
         if len(self.config.ham_folder_ids)==0 and self.mgr.outlook is not None:
             inbox = self.mgr.outlook.Session.GetDefaultFolder(constants.olFolderInbox)
-            self.config.ham_folder_ids = [inbox.EntryID]
+            self.config.ham_folder_ids = [(inbox.StoreID, inbox.EntryID)]
         # If we have no known spam folders, but do have a spam folder
         # defined in the filters, use it.
         if len(self.config.spam_folder_ids)==0 and self.mgr.config.filter.spam_folder_id:

@@ -86,7 +86,7 @@ class FilterArrivalsDialog(dialog.Dialog):
         # If we have no watch folder, suggest the Inbox.
         if len(self.watch_folder_ids)==0 and mgr.outlook is not None:
             inbox = self.mgr.outlook.Session.GetDefaultFolder(constants.olFolderInbox)
-            self.watch_folder_ids = [inbox.EntryID]
+            self.watch_folder_ids = [(inbox.StoreID, inbox.EntryID)]
 
         self.spam_folder_id = mgr.config.filter.spam_folder_id
         self.unsure_folder_id = mgr.config.filter.unsure_folder_id
@@ -388,7 +388,8 @@ if __name__=='__main__':
     mgr.message_store = msgstore.MAPIMsgStore()
     mgr.config = config = Config()
     config.filter = Config()
-    config.filter.watch_folder_ids = [outlook.Session.GetDefaultFolder(constants.olFolderInbox).EntryID]
+    inbox = outlook.Session.GetDefaultFolder(constants.olFolderInbox)
+    config.filter.watch_folder_ids = [(inbox.StoreID, inbox.EntryID)]
     config.filter.watch_folder_include_sub = True
     config.filter.spam_folder_id = ""
     config.filter.spam_action = "Mo"
@@ -397,7 +398,8 @@ if __name__=='__main__':
     config.filter.unsure_action = "No"
     config.filter.unsure_threshold = 20
     config.filter_now=Config()
-    config.filter_now.folder_ids = [outlook.Session.GetDefaultFolder(constants.olFolderInbox).EntryID]
+    inbox = outlook.Session.GetDefaultFolder(constants.olFolderInbox)
+    config.filter_now.folder_ids = [(inbox.StoreID, inbox.EntryID)]
     config.filter_now.include_sub = True
     config.filter_now.only_unread = False
     config.filter_now.only_unseen = True
