@@ -4,7 +4,6 @@
 from __future__ import generators
 
 import email
-import email.Header
 import email.Message
 import email.Header
 import email.Utils
