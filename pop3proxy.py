@@ -610,7 +610,8 @@ class UserInterface(BrighterAsyncChat):
     #    this: "... name='n' value='v' ..." even if there is no default
     #    value.  This is so that setFieldValue can set the value.
 
-    header = """<html><head><title>Spambayes proxy: %s</title>
+    header = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+             <html><head><title>Spambayes proxy: %s</title>
              <style>
              body { font: 90%% arial, swiss, helvetica; margin: 0 }
              table { font: 90%% arial, swiss, helvetica }
@@ -851,7 +852,7 @@ class UserInterface(BrighterAsyncChat):
         if name == 'Home':
             homeLink = name
         else:
-            homeLink = "<a href='home'>Home</a> > %s" % name
+            homeLink = "<a href='home'>Home</a> &gt; %s" % name
         if showImage:
             image = "<img src='helmet.gif' align='absmiddle'>&nbsp;"
         else:
@@ -1060,7 +1061,7 @@ class UserInterface(BrighterAsyncChat):
                                     label, key, spam)
             stripeClass = ['stripe_on', 'stripe_off'][stripe]
             lines.append("""<tr class='%s'><td>%s</td><td>%s</td>
-                            <td><center>%s</center></td></tr>""" % \
+                            <td align='center'>%s</td></tr>""" % \
                             (stripeClass, subject, from_, radioGroup))
             stripe = stripe ^ 1
 
@@ -1162,7 +1163,7 @@ class UserInterface(BrighterAsyncChat):
                                  (label, label, label, label, label))
                     self.appendMessages(lines, keyedMessages[header], label)
 
-            lines.append("""<tr><td></td><td></td><td align='middle'>&nbsp;<br>
+            lines.append("""<tr><td></td><td></td><td align='center'>&nbsp;<br>
                             <input type='submit' value='Train'></td></tr>""")
             lines.append("</table></form>")
             content = "\n".join(lines)
