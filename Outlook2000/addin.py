@@ -463,6 +463,8 @@ class ExplorerWithEvents:
         # stick.  The downside is that should the user uninstall this addin
         # there is no clean way to remove the buttons.  Do we even care?
         assert item_attrs.has_key('Tag'), "Need a 'Tag' attribute!"
+        # Note we search *all* command bars here for the tag, only
+        # adding to the specified bar if not found.
         item = self.CommandBars.FindControl(
                         Type = control_type,
                         Tag = item_attrs['Tag'])
