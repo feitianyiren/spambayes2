@@ -18,7 +18,9 @@ Where:
         use file as the persistent store.  loads data from this file if it
         exists, and saves data to this file at the end.
         Default: %(DEFAULTDB)s
-
+    -U
+        Untrain instead of train.  The interpretation of -g and -s remains
+        the same.
     -f
         run as a filter: read a single message from stdin, add a new
         header, and write it to stdout.  If you want to run from
@@ -81,12 +83,23 @@ def train(h, msgs, is_spam):
         h.train(msg, is_spam)
     print
 
+def untrain(h, msgs, is_spam):
+    """Untrain bayes with all messages from a mailbox."""
+    mbox = mboxutils.getmbox(msgs)
+    i = 0
+    for msg in mbox:
+        i += 1
+        sys.stdout.write("\r%6d" % i)
+        sys.stdout.flush()
+        h.untrain(msg, is_spam)
+    print
+
 def score(h, msgs, reverse=0):
     """Score (judge) all messages from a mailbox."""
     # XXX The reporting needs work!
     mbox = mboxutils.getmbox(msgs)
     i = 0
-    spams = hams = 0
+    spams = hams = unsures = 0
     for msg in mbox:
         i += 1
         prob, clues = h.score(msg, True)
@@ -95,17 +108,22 @@ def score(h, msgs, reverse=0):
         else:
             msgno = i
         isspam = (prob >= SPAM_THRESHOLD)
+        isham = (prob <= HAM_THRESHOLD)
         if isspam:
             spams += 1
             if not reverse:
                 print "%6s %4.2f %1s" % (msgno, prob, isspam and "S" or "."),
                 print h.formatclues(clues)
-        else:
+        elif isham:
             hams += 1
             if reverse:
-                print "%6s %4.2f %1s" % (msgno, prob, isspam and "S" or "."),
+                print "%6s %4.2f %1s" % (msgno, prob, isham and "S" or "."),
                 print h.formatclues(clues)
-    return (spams, hams)
+        else:
+            unsures += 1
+            print "%6s %4.2f U" % (msgno, prob),
+            print h.formatclues(clues)
+    return (spams, hams, unsures)
 
 def usage(code, msg=''):
     """Print usage message and sys.exit(code)."""
@@ -118,7 +136,7 @@ def usage(code, msg=''):
 def main():
     """Main program; parse options and go."""
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hdDfg:s:p:u:r')
+        opts, args = getopt.getopt(sys.argv[1:], 'hdDUfg:s:p:u:r')
     except getopt.error, msg:
         usage(2, msg)
 
@@ -130,6 +148,7 @@ def main():
     spam = []
     unknown = []
     reverse = 0
+    untrain = 0
     do_filter = False
     usedb = None
     mode = 'r'
@@ -152,6 +171,8 @@ def main():
             do_filter = True
         elif opt == '-u':
             unknown.append(arg)
+        elif opt == '-U':
+            untrain = 1
         elif opt == '-r':
             reverse = 1
     if args:
@@ -164,16 +185,27 @@ def main():
 
     h = hammie.open(pck, usedb, mode)
 
-    for g in good:
-        print "Training ham (%s):" % g
-        train(h, g, False)
-        save = True
+    if not untrain:
+        for g in good:
+            print "Training ham (%s):" % g
+            train(h, g, False)
+            save = True
 
-    for s in spam:
-        print "Training spam (%s):" % s
-        train(h, s, True)
-        save = True
+        for s in spam:
+            print "Training spam (%s):" % s
+            train(h, s, True)
+            save = True
+    else:
+        for g in good:
+            print "Untraining ham (%s):" % g
+            untrain(h, g, False)
+            save = True
 
+        for s in spam:
+            print "Untraining spam (%s):" % s
+            untrain(h, s, True)
+            save = True
+        
     if save:
         h.store()
 
@@ -183,14 +215,15 @@ def main():
         sys.stdout.write(filtered)
 
     if unknown:
-        (spams, hams) = (0, 0)
+        spams = hams = unsures = 0
         for u in unknown:
             if len(unknown) > 1:
                 print "Scoring", u
-            s, g = score(h, u, reverse)
+            s, g, u = score(h, u, reverse)
             spams += s
             hams += g
-        print "Total %d spam, %d ham" % (spams, hams)
+            unsures += u
+        print "Total %d spam, %d ham, %d unsure" % (spams, hams, unsures)
 
 if __name__ == "__main__":
     main()
