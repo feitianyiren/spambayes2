@@ -11,6 +11,7 @@ import email.Errors
 import re
 import math
 import time
+import os
 from sets import Set
 
 from Options import options
@@ -1135,6 +1136,41 @@ class Tokenizer:
             if noname_count:
                 yield "%s:no real name:2**%d" % (field,
                                                  round(log2(noname_count)))
+
+        # Spammers sometimes send out mail alphabetically to fairly large
+        # numbers of addresses.  This results in headers like:
+        #   To: <itinerart@videotron.ca>
+        #   Cc: <itinerant@skyful.com>, <itinerant@netillusions.net>,
+        #       <itineraries@musi-cal.com>, <itinerario@rullet.leidenuniv.nl>,
+        #       <itinerance@sorengo.com>
+        #
+        # This token attempts to exploit that property.  The above would
+        # give a common prefix of "itinera" for 6 addresses, yielding a
+        # gross score of 42.  We group scores into buckets by dividing by 10
+        # to yield a final token value of "pfxlen:04".  The length test
+        # eliminates the bad case where the message was sent to a single
+        # individual.
+        if options.summarize_email_prefixes:
+            all_addrs = []
+            addresses = msg.get_all('to', []) + msg.get_all('cc', [])
+            for name, addr in email.Utils.getaddresses(addresses):
+                all_addrs.append(addr.lower())
+
+            if len(all_addrs) > 1:
+                # don't be fooled by "os.path." - commonprefix
+                # operates char-by-char!
+                pfx = os.path.commonprefix(all_addrs)
+                if pfx:
+                    score = (len(pfx) * len(all_addrs)) // 10
+                    # After staring at pflen:* values generated from a large
+                    # number of ham & spam I saw that any scores greater
+                    # than 3 were always associated with spam.  Collapsing
+                    # all such scores into a single token avoids a bunch of
+                    # hapaxes like "pfxlen:28".
+                    if score > 3:
+                        yield "pfxlen:big"
+                    else:
+                        yield "pfxlen:%d" % score
 
         # To:
         # Cc:
