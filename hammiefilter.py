@@ -34,6 +34,10 @@ Where [OPTION] is one of:
         train on stdin as a good (ham) message
     -s
         train on stdin as a bad (spam) message
+    -d DBFILE
+        use database in DBFILE
+    -D PICKLEFILE
+        use pickle (instead of database) in PICKLEFILE
     -G
         untrain ham on stdin -- only use if you've already trained this
         message!
@@ -55,6 +59,11 @@ program = sys.argv[0]
 
 # Options
 options = Options.options
+options.mergefiles(['/etc/hammierc',
+                    os.path.expanduser('~/.hammierc')])
+DBNAME = options.hammiefilter_persistent_storage_file
+DBNAME = os.path.expanduser(DBNAME)
+USEDB = options.hammiefilter_persistent_use_database
 
 def usage(code, msg=''):
     """Print usage message and sys.exit(code)."""
@@ -67,13 +76,8 @@ def usage(code, msg=''):
 class HammieFilter(object):
     def __init__(self):
         options = Options.options
-        options.mergefiles(['/etc/hammierc',
-                            os.path.expanduser('~/.hammierc')])
-        
-        self.dbname = options.hammiefilter_persistent_storage_file
-        self.dbname = os.path.expanduser(self.dbname)
-        self.usedb = options.hammiefilter_persistent_use_database
-        
+        self.dbname = DBNAME
+        self.usedb = USEDB
 
     def newdb(self):
         h = hammie.open(self.dbname, self.usedb, 'n')
@@ -110,12 +114,20 @@ class HammieFilter(object):
         h.store()
 
 def main():
+    global DBNAME, USEDB
+    
     h = HammieFilter()
     action = h.filter
-    opts, args = getopt.getopt(sys.argv[1:], 'hngsGS', ['help'])
+    opts, args = getopt.getopt(sys.argv[1:], 'hngsGSd:D:', ['help'])
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage(0)
+        elif opt == '-d':
+            USEDB = True
+            DBNAME = arg
+        elif opt == '-D':
+            USEDB = False
+            DBNAME = arg
         elif opt == '-g':
             action = h.train_ham
         elif opt == '-s':
