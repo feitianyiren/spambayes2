@@ -310,13 +310,16 @@ class ButtonDeleteAsSpamEvent(ButtonDeleteAsEventBase):
         import train
         for msgstore_message in msgstore_messages:
             # Must train before moving, else we lose the message!
-            print "Training on message - ",
+            subject = msgstore_message.GetSubject()
+            print "Deleting and spam training message '%s' - " % (subject,),
             if train.train_message(msgstore_message, True, self.manager, rescore = True):
                 print "trained as spam"
             else:
                 print "already was trained as spam"
             # Now move it.
             msgstore_message.MoveTo(spam_folder)
+            # Note the move will possibly also trigger a re-train
+            # but we are smart enough to know we have already done it.
 
 class ButtonRecoverFromSpamEvent(ButtonDeleteAsEventBase):
     def Init(self, manager, explorer):
@@ -344,7 +347,8 @@ class ButtonRecoverFromSpamEvent(ButtonDeleteAsEventBase):
         import train
         for msgstore_message in msgstore_messages:
             # Must train before moving, else we lose the message!
-            print "Training on message - ",
+            subject = msgstore_message.GetSubject()
+            print "Recovering and ham training message '%s' - " % (subject,),
             if train.train_message(msgstore_message, False, self.manager, rescore = True):
                 print "trained as ham"
             else:
@@ -352,6 +356,8 @@ class ButtonRecoverFromSpamEvent(ButtonDeleteAsEventBase):
             # Now move it.
             # XXX - still don't write the source, so no point looking :(
             msgstore_message.MoveTo(inbox_folder)
+            # Note the move will possibly also trigger a re-train
+            # but we are smart enough to know we have already done it.
 
 # Helpers to work with images on buttons/toolbars.
 def SetButtonImage(button, fname):
@@ -571,8 +577,8 @@ class OutlookAddin:
             explorer = explorers.Item(i+1)
             self.explorers_events._DoNewExplorer(explorer, True)
 
-        self.FiltersChanged()
         if self.manager.config.filter.enabled:
+            self.FiltersChanged()
             try:
                 self.ProcessMissedMessages()
             except:
@@ -599,8 +605,20 @@ class OutlookAddin:
                   % (num, folder.name, (clock()-start)*1000)
 
     def FiltersChanged(self):
-        # Create a notification hook for all folders we filter.
-        self.UpdateFolderHooks()
+        try:
+            # Create a notification hook for all folders we filter.
+            self.UpdateFolderHooks()
+        except:
+            import traceback
+            print "Error installing folder hooks."
+            traceback.print_exc()
+            self.manager.config.filter.enabled = False
+            self.manager.SaveConfig()
+            win32ui.MessageBox(
+                "There was an error initializing the Spam plugin\r\n\r\n"
+                "Spam filtering has been disabled.  Please re-configure\r\n"
+                "and re-enable this plugin",
+                "Anti-Spam plugin")
 
     def UpdateFolderHooks(self):
         config = self.manager.config.filter
