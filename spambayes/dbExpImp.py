@@ -1,0 +1,217 @@
+#! /usr/bin/env python
+
+"""dbExpImp.py - Bayes database export/import
+
+Classes:
+
+
+Abstract:
+
+    This utility has the primary function of exporting and importing
+    a spambayes database into/from a flat file.  This is useful in a number
+    of scenarios.
+    
+    Platform portability of database - flat files can be exported and
+    imported across platforms (winduhs and linux, for example)
+    
+    Database implementation changes - databases can survive database
+    implementation upgrades or new database implementations.  For example,
+    if a dbm implementation changes between python x.y and python x.y+1...
+    
+    Database reorganization - an export followed by an import reorgs an
+    existing database, <theoretically> improving performance, at least in 
+    some database implementations
+    
+    Database sharing - it is possible to distribute particular databases
+    for research purposes, database sharing purposes, or for new users to
+    have a 'seed' database to start with.
+    
+    Database merging - multiple databases can be merged into one quite easily
+    by simply not specifying -n on an import.  This will add the two database
+    nham and nspams together (assuming the two databases do not share corpora)
+    and for wordinfo conflicts, will add spamcount and hamcount together.
+    
+    Spambayes software release migration - an export can be executed before
+    a release upgrade, as part of the installation script.  Then, after the
+    new software is installed, an import can be executed, which will
+    effectively preserve existing training.  This eliminates the need for
+    retraining every time a release is installed.
+    
+    Others?  I'm sure I haven't thought of everything...
+    
+Usage:
+    dbExpImp [options]
+
+        options:
+            -e     : export
+            -i     : import
+            -f: FN : flat file to export to or import from
+            -d: FN : name of pickled database file to use
+            -D: FN : name of dbm database file to use
+            -m     : merge import into an existing database file.  This is
+                     meaningful only for import. If omitted, a new database
+                     file will be created.  If specified, the imported
+                     wordinfo will be merged into an existing database.
+                     Run dbExpImp -h for more information.
+            -h     : help
+
+Examples:
+
+    dbExpImp -e -d mybayes.db -f mybayes.db.export
+        Exports pickled mybayes.db into mybayes.db.export as a csv flat file
+        
+    dbExpImp -i -D mybayes.db -f mybayes.db.export
+        Imports mybayes.eb.export into a new DBM mybayes.db
+        
+    dbExpImp -e -i -n -d mybayes.db -f mybayes.db.export
+        Exports then imports (reorganizes) new pickled mybayes.db
+        
+    dbExpImp -e -d abayes.db -f abayes.export
+    dbExpImp -i -D abayes.db -f abayes.export
+        Converts a bayes database from pickle to DBM
+        
+    dbExpImp -e -d abayes.db -f abayes.export
+    dbExpImp -e -d bbayes.db -f bbayes.export
+    dbExpImp -i -d newbayes.db -f abayes.export
+    dbExpImp -i -m -d newbayes.db -f bbayes.export
+        Creates a new database (newbayes.db) from two
+        databases (abayes.db, bbayes.db)
+
+To Do:
+    o Suggestions?
+
+"""
+
+# This module is part of the spambayes project, which is Copyright 2002
+# The Python Software Foundation and is covered by the Python Software
+# Foundation license.
+
+__author__ = "Tim Stone <tim@fourstonesExpressions.com>"
+
+from __future__ import generators
+
+import storage
+import sys, os, getopt, errno, re
+import urllib
+
+def runExport(dbFN, useDBM, outFN):
+
+    print "running export on %s" % (dbFN)
+    if useDBM:
+        bayes = storage.DBDictClassifier(dbFN)
+    else:
+        bayes = storage.PickledClassifier(dbFN)
+
+    try:
+        fp = open(outFN, 'w')
+    except IOError, e:
+        if e.errno != errno.ENOENT:
+           raise
+       
+    nham = bayes.nham;
+    nspam = bayes.nspam;
+    print "nham %s, nspam %s" % (nham, nspam)
+    
+    fp.write("%s,%s,\n" % (nham, nspam))
+    
+    for word in bayes.wordinfo:
+        hamcount = bayes.wordinfo[word].hamcount
+        spamcount = bayes.wordinfo[word].spamcount
+        word = urllib.quote(word)
+        fp.write("%s`%s`%s`\n" % (word, hamcount, spamcount))
+        
+    fp.close()
+
+def runImport(dbFN, useDBM, newDBM, inFN):
+
+    if newDBM:
+        try:
+            os.unlink(dbFN)
+        except OSError, e:
+            if e.errno != 2:     # errno.<WHAT>
+                raise
+                
+    if useDBM:
+        bayes = storage.DBDictClassifier(dbFN)
+    else:
+        bayes = storage.PickledClassifier(dbFN)
+
+    try:
+        fp = open(inFN, 'r')
+    except IOError, e:
+        if e.errno != errno.ENOENT:
+           raise
+    
+    nline = fp.readline()
+    print nline
+    (nham, nspam, junk) = re.split(',', nline)
+ 
+    if newDBM:
+        bayes.nham = nham
+        bayes.nspam = nspam
+    else:
+        bayes.nham += nham
+        bayes.nspam += nspam
+    
+    lines = fp.readlines()
+    
+    for line in lines:
+        (word, hamcount, spamcount, junk) = re.split('`', line)
+        word = urllib.unquote(word)
+       
+        try:
+            wi = bayes.wordinfo[word]
+        except KeyError:
+            wi = bayes.WordInfoClass()
+
+        wi.hamcount += int(hamcount)
+        wi.spamcount += int(spamcount)
+               
+        bayes._wordinfoset(word, wi)
+
+    fp.close()
+    bayes.store()
+
+
+if __name__ == '__main__':
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'iehmd:D:f:')
+    except getopt.error, msg:
+        print >>sys.stderr, str(msg) + '\n\n' + __doc__
+        sys.exit()
+
+    usePickle = False
+    useDBM = False
+    newDBM = True
+    dbFN = None
+    flatFN = None
+    exp = False
+    imp = False
+
+    for opt, arg in opts:
+        if opt == '-h':
+            print >>sys.stderr, __doc__
+            sys.exit()
+        elif opt == '-d':
+            useDBM = False
+            dbFN = arg
+        elif opt == '-D':
+            useDBM = True
+            dbFN = arg
+        elif opt == '-f':
+            flatFN = arg
+        elif opt == '-e':
+            exp = True
+        elif opt == '-i':
+            imp = True
+        elif opt == '-m':
+            newDBM = False
+
+    if (dbFN and flatFN):
+        if exp:
+            runExport(dbFN, useDBM, flatFN)
+        if imp:
+            runImport(dbFN, useDBM, newDBM, flatFN)
+    else:
+        print >>sys.stderr, __doc__
