@@ -140,7 +140,8 @@ highest-scoring tokens and excluding the lowest-scoring ones.
 import os, sys, re, operator, errno, getopt, string, cStringIO, time, bisect
 import socket, asyncore, asynchat, cgi, urlparse, webbrowser
 import mailbox, storage, tokenizer, mboxutils, email.Header
-from FileCorpus import FileCorpus, FileMessageFactory, GzipFileMessageFactory
+from FileCorpus import FileCorpus, ExpiryFileCorpus
+from FileCorpus import FileMessageFactory, GzipFileMessageFactory
 from email.Iterators import typed_subpart_iterator
 from Options import options
 
@@ -1313,13 +1314,17 @@ class State:
             # Create/open the Corpuses.
             map(ensureDir, [self.spamCache, self.hamCache, self.unknownCache])
             if self.gzipCache:
-                messageFactory = GzipFileMessageFactory()
+                factory = GzipFileMessageFactory()
             else:
-                messageFactory = FileMessageFactory()
-            self.messageFactory = messageFactory
-            self.spamCorpus = FileCorpus(messageFactory, self.spamCache)
-            self.hamCorpus = FileCorpus(messageFactory, self.hamCache)
-            self.unknownCorpus = FileCorpus(messageFactory, self.unknownCache)
+                factory = FileMessageFactory()
+            age = options.pop3proxy_cache_expiry_days*24*60*60
+            self.spamCorpus = ExpiryFileCorpus(age, factory, self.spamCache)
+            self.hamCorpus = ExpiryFileCorpus(age, factory, self.hamCache)
+            self.unknownCorpus = FileCorpus(factory, self.unknownCache)
+
+            # Expire old messages from the trained corpuses.
+            self.spamCorpus.removeExpiredMessages()
+            self.hamCorpus.removeExpiredMessages()
 
             # Create the Trainers.
             self.spamTrainer = storage.SpamTrainer(self.bayes)

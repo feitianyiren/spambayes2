@@ -182,7 +182,7 @@ class ExpiryFileCorpus(Corpus.ExpiryCorpus, FileCorpus):
         '''Constructor(FileMessageFactory, corpus directory name, fnmatch
 filter'''
 
-        Corpus.ExpiryCorpus.__init__(self, expireBefore, factory, cacheSize)
+        Corpus.ExpiryCorpus.__init__(self, expireBefore)
         FileCorpus.__init__(self, factory, directory, filter, cacheSize)
 
 
@@ -250,7 +250,7 @@ class FileMessage(Corpus.Message):
 
         elip = ''
         sub = self.getSubstance()
-        
+
         if options.verbose:
             sub = self.getSubstance()
         else:
@@ -378,7 +378,7 @@ def runTest(useGzip):
 
     m1 = fmClass('XMG00001', 'fctestspamcorpus')
     m1.setSubstance(testmsg2())
-    
+
     print '\n\nAdd a message to hamcorpus that does not match the filter'
 
     try:
@@ -403,6 +403,7 @@ def runTest(useGzip):
     # no trainers, since there's no such thing as 'unsure training'
     unsurecorpus = ExpiryFileCorpus(5, fmFact, \
                                     'fctestunsurecorpus', 'MSG*', 2)
+    unsurecorpus.removeExpiredMessages()
 
 
     print '\n\nIterate the unsure corpus twice, to make sure cache size \
@@ -435,7 +436,7 @@ We should not see MSG00003 in this iteration.'
     print 'Date header is',msg.getDate()
     print 'Subject header is',msg.getSubject()
     print 'From header is',msg.getFrom()
-    
+
     print 'Header text is:',msg.getHeaders()
     print 'Headers are:',msg.getHeadersList()
     print 'Body is:',msg.getPayload()
@@ -491,7 +492,7 @@ def cleanupTest():
         except OSError, e:
             if e.errno != 2:     # errno.<WHAT>
                 raise
-    
+
         try:
             os.unlink('fctestclass.bayes')
         except OSError, e:
@@ -724,4 +725,4 @@ if __name__ == '__main__':
     else:
         print >>sys.stderr, __doc__
 
-       
+

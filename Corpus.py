@@ -234,36 +234,19 @@ class Corpus:
 class ExpiryCorpus:
     '''Corpus of "young" file system artifacts'''
 
-    def __init__(self, expireBefore, factory, cacheSize=-1):
+    def __init__(self, expireBefore):
         '''Constructor'''
 
         self.expireBefore = expireBefore
-        Corpus.__init__(self, factory, cacheSize)
-
-    def cacheMessage(self, msg):
-        '''Add a message to the in-memory cache'''
-        # This is where the expiry of a message is enforced
-        # This method should probably not be overridden
-
-        if msg.createTimestamp() >= time.time() - self.expireBefore:
-            Corpus.cacheMessage(self, msg)
-        else:
-            if options.verbose:
-                print 'Not caching %s because it has expired' % (msg.key())
-            raise KeyError, msg
-
-        return msg
 
     def removeExpiredMessages(self):
         '''Kill expired messages'''
 
-        for key in self.keys():
-            try:
-                msg = self[key]
-            except KeyError, e:
+        for msg in self:
+            if msg.createTimestamp() < time.time() - self.expireBefore:
                 if options.verbose:
                     print 'message %s has expired' % (key)
-                self.removeMessage(e[0])
+                self.removeMessage(msg)
 
 
 class Message:
@@ -375,10 +358,10 @@ class Message:
         match = hdrregex.findall(data)
 
 	return match
-	
+
     def getHeaders(self):
         '''Return message headers as text'''
-        
+
         return self.hdrtxt
 
     def getPayload(self):
