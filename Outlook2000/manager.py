@@ -37,12 +37,12 @@ except NameError: # no __file__
 # See if we can use the new bsddb module. (The old one is unreliable
 # on Windows, so we don't use that)
 try:
-    from bsddb import db # This name doesn't exist in the old one.
-    use_db = True
+    import bsddb
+    use_db = hasattr(bsddb, "db") # This name doesn't exist in the old one.
 except ImportError:
     # See if the explicit bsddb3 module exists.
     try:
-        import bsddb3
+        import bsddb3 as bsddb
         use_db = True
     except ImportError:
         use_db = False
@@ -116,15 +116,11 @@ class DBStorageManager(BasicStorageManager):
         bayes.db.close()
         bayes.dbm.close()
     def open_mdb(self):
-        try:
-            import bsddb
-        except ImportError:
-            import bsddb3 as bsddb
         return bsddb.hashopen(self.mdb_filename)
     def new_mdb(self):
         try:
             os.unlink(self.mdb_filename)
-        except IOError, e:
+        except EnvironmentError, e:
             if e.errno != errno.ENOENT: raise
         return self.open_mdb()
     def store_mdb(self, mdb):
