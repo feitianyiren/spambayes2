@@ -132,8 +132,8 @@ extract_dow: False
 # spam indicator.
 replace_nonascii_chars: False
 
-[TestDriver]
-# These control various displays in class TestDriver.Driver, and Tester.Test.
+[Categorization]
+# These options control how a message is categorized
 
 # spam_cutoff and ham_cutoff are used in Python slice sense:
 #    A msg is considered    ham if its score is in 0:ham_cutoff
@@ -158,6 +158,10 @@ replace_nonascii_chars: False
 # reported to work best by various testers on their data.
 ham_cutoff:  0.20
 spam_cutoff: 0.90
+
+[TestDriver]
+# These control various displays in class TestDriver.Driver, and Tester.Test.
+
 
 # Number of buckets in histograms.
 nbuckets: 200
@@ -408,6 +412,9 @@ all_options = {
                   'basic_header_skip': ('get', lambda s: Set(s.split())),
                   'replace_nonascii_chars': boolean_cracker,
                  },
+    'Categorization': { 'ham_cutoff': float_cracker,
+                        'spam_cutoff': float_cracker,
+                      },
     'TestDriver': {'nbuckets': int_cracker,
                    'show_ham_lo': float_cracker,
                    'show_ham_hi': float_cracker,
@@ -422,8 +429,6 @@ all_options = {
                    'save_histogram_pickles': boolean_cracker,
                    'pickle_basename': string_cracker,
                    'show_charlimit': int_cracker,
-                   'ham_cutoff': float_cracker,
-                   'spam_cutoff': float_cracker,
                    'spam_directories': string_cracker,
                    'ham_directories': string_cracker,
                    'compute_best_cutoffs_from_histograms': boolean_cracker,
