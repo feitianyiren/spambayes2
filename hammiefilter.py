@@ -69,7 +69,7 @@ filter a message on disk:
     %(program)s -s < message
 
 
-procmail recipie to filter and train in one step:
+procmail recipe to filter and train in one step:
     :0 fw
     | %(program)s -t
 
