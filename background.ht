@@ -31,6 +31,18 @@ section of Options.py contain more information about various approaches
 to tokenizing, as well as various things that have been tried and found 
 to make little or no difference.</p>
 
+<p>Because the original tests of the system mixed a ham corpus from
+a high-volume mailing list with a spam corpus from a different source,
+email header lines were ignored completely at first (they contained too
+many consistent clues about which source a message came from).  As a
+result, this project tried much harder than most to find ways to extract
+useful information from message bodies.  For example, special
+tokenizing of embedded URLs was one of the first things tried, and
+instantly cut the false negative rate in half.  In the end, testing
+showed that very good classifiers can be gotten by looking only at
+message bodies, or by looking only at message headers.  Looking at both
+does best, of course.</p>
+
 <!-- correlation of clues, ... -->
 
 <h3>Combining and Scoring</h3>
@@ -111,6 +123,18 @@ with three possible results - "Spam", "Ham", or "Unsure". It's possible to
 tweak the high and low cutoffs for the Unsure window - this trades off 
 unsure messages vs possible false positives or negatives. In the chi-squared
 results, the "unsure" window can be quite large, and still result in very small numbers of "unsure" messages. </P>
+
+<p>A remarkable property of chi-combining is that people have generally
+been sympathetic to its "Unsure" ratings:  people usually agree that
+messages classed Unsure really are hard to categorize.  For example,
+commercial HTML email from a company you do business with is quite likely
+to score as Unsure the first time the system sees such a message from
+a particular company.  Spam and commercial email both use the language
+and devices of advertising heavily, so it's hard to tell them apart.
+Training quickly teaches the system all sorts of things about the
+commerical email you want, though, ranging from which company sent it
+and how they addressed you, to the kinds of products and services it's
+offering.</p>
 
 <h3>Training</h3>
 <p class="todo">TBD</p>
