@@ -372,6 +372,10 @@ html_ui_launch_browser: False
 
 [globals]
 verbose: False
+# What DBM storage type should we use?  Must be best, db3hash, dbhash,
+# gdbm, dumbdbm.  Windows folk should steer clear of dbhash.  Default is
+# "best", which will pick the best DBM type available on your platform.
+dbm_type: best
 """
 
 int_cracker = ('getint', None)
@@ -460,6 +464,7 @@ all_options = {
                 'html_ui_launch_browser': boolean_cracker,
                 },
     'globals': {'verbose': boolean_cracker,
+                'dbm_type': string_cracker,
                 },
 }
 

@@ -51,6 +51,7 @@ from Options import options
 import cPickle as pickle
 import errno
 import shelve
+import dbmstorage
 
 PICKLE_TYPE = 1
 NO_UPDATEPROBS = False   # Probabilities will not be autoupdated with training
@@ -130,7 +131,8 @@ class DBDictClassifier(classifier.Classifier):
         if options.verbose:
             print 'Loading state from',self.db_name,'database'
 
-        self.db = shelve.DbfilenameShelf(self.db_name, self.mode)
+        self.dbm = dbmstorage.open(self.db_name, self.mode)
+        self.db = shelve.Shelf(self.dbm)
 
         if self.db.has_key(self.statekey):
             t = self.db[self.statekey]
