@@ -51,7 +51,6 @@ def main():
     print 'Training with ham...'
     train(bayes, ham_name, False)
     print 'Updating probabilities...'
-    bayes.update_probabilities()
     items = []
     for word, record in bayes.wordinfo.iteritems():
         prob = bayes.probability(record)

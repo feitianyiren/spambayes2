@@ -336,14 +336,6 @@ class Classifier:
         True, you're telling the classifier this message is definitely spam,
         else that it's definitely not spam.
 
-        If optional arg update_word_probabilities is False (the default
-        is True), don't update individual words' probabilities.
-        Updating them is expensive, and if you're going to pass many
-        messages to learn(), it's more efficient to pass False here and
-        call update_probabilities() once when you're done.  The
-        important thing is that the probabilities get updated before
-        calling spamprob() again.
-
         """
 
         self._add_msg(wordstream, is_spam)
@@ -439,20 +431,6 @@ class Classifier:
             self.probcache[spamcount] = {hamcount: prob}
 
         return prob
-
-    def update_probabilities(self):
-        """Update the word probabilities in the spam database.
-
-        This computes a new probability for every word in the database,
-        which can be expensive.  learn() and unlearn() clear the
-        probability cache each time by default, and that will be rebuilt
-        as probabilities are looked up.  If for some reason you need to
-        update all the probabilities in one step (say, for
-        benchmarking), you can call this method.
-        """
-
-        for word, record in self.wordinfo.iteritems():
-            self.probability(record)
 
     # NOTE:  Graham's scheme had a strange asymmetry:  when a word appeared
     # n>1 times in a single message, training added n to the word's hamcount

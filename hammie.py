@@ -125,9 +125,6 @@ class Hammie:
 
         is_spam should be 1 if the message is spam, 0 if not.
 
-        Probabilities are not updated after this call is made; to do
-        that, call update_probabilities().
-
         """
 
         self.bayes.learn(tokenize(msg), is_spam)
@@ -137,9 +134,6 @@ class Hammie:
 
         msg can be a string, a file object, or a Message object.
 
-        Probabilities are not updated after this call is made; to do
-        that, call update_probabilities().
-
         """
 
         self.train(msg, False)
@@ -148,9 +142,6 @@ class Hammie:
         """Train bayes with spam.
 
         msg can be a string, a file object, or a Message object.
-
-        Probabilities are not updated after this call is made; to do
-        that, call update_probabilities().
 
         """
 

@@ -49,7 +49,6 @@ __author__ = "Neale Pickett <neale@woozle.org>, \
               Tim Stone <tim@fourstonesExpressions.com>"
 __credits__ = "Tim Peters (author of DBDict class), \
                all the spambayes contributors."
-from __future__ import generators
 
 try:
     import cPickle as pickle
@@ -127,21 +126,6 @@ class DBDict:
     def __delitem__(self, key, val):
         del(self.hash[key])
 
-    def __iter__(self, fn=None):
-        k = self.hash.first()
-        while k != None:
-            key = k[0]
-            val = self.__getitem__(key)
-            if key not in self.iterskip:
-                if fn:
-                    yield fn((key, val))
-                else:
-                    yield (key, val)
-            try:
-                k = self.hash.next()
-            except KeyError:
-                break
-
     def __contains__(self, name):
         return self.has_key(name)
 
@@ -154,16 +138,6 @@ class DBDict:
             return self[key]
         else:
             return dfl
-
-    def iteritems(self):
-        return self.__iter__()
-
-    def iterkeys(self):
-        return self.__iter__(lambda k: k[0])
-
-    def itervalues(self):
-        return self.__iter__(lambda k: k[1])
-
 
 open = DBDict
 

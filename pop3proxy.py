@@ -1003,16 +1003,12 @@ class UserInterface(BrighterAsyncChat):
                     except KeyError:
                         pass  # Must be a reload.
 
-        # Update the probabilities if we've done any training.
+        # Report on any training.
         if numTrained > 0:
             plural = ''
             if numTrained != 1:
                 plural = 's'
             self.push("Trained on %d message%s. " % (numTrained, plural))
-            self.push("Updating probabilities... ")
-            self.push(" ")
-            state.bayes.update_probabilities()
-            self.push("Done.</b></p>")
 
         # If any messages were deferred, show the same page again.
         if numDeferred > 0:

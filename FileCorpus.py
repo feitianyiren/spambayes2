@@ -472,8 +472,7 @@ based on prob of %f' % (msg.key(), msg.spamprob)
     print 'unsurecorpus msgs dict contains', unsurecorpus.msgs
 
 
-    print '\n\nUpdating and storing bayes databases'
-    miscbayes.update_probabilities()  # if we don't, training is forgotten
+    print '\n\nStoring bayes databases'
     miscbayes.store()
     classbayes.store()
 
