@@ -10,6 +10,15 @@ Author: spambayes
 <li>There's also a vast number of clues and notes scattered as block comments through the code.
 </ul>
 
+<h2>Search the mailing lists</h2>
+<p>A quick-n-dirty google search interface for the mailing list archives - put your search terms in the box with the existing ones:
+</p>
+<form action="http://www.google.com/search" method="GET">
+<p>Enter search terms: 
+<input type="text" size="40" name="q" value="+spambayes +site:mail.python.org">
+<input type="submit" name="Search" value="Search">
+</p>
+</form>
 <h2>Glossary</h2>
 <p>A useful(?) glossary of terminology</p>
 <dl>
