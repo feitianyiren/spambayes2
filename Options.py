@@ -360,8 +360,8 @@ persistent_use_database: False
 # or a comma-separated list of those.  The ":110" is optional.  If you
 # specify more than one server in pop3proxy_servers, you must specify the
 # same number of ports in pop3proxy_ports.
-pop3proxy_servers: ""
-pop3proxy_ports: ""
+pop3proxy_servers:
+pop3proxy_ports:
 pop3proxy_cache_use_gzip: False
 pop3proxy_cache_expiry_days: 7
 pop3proxy_spam_cache: pop3proxy-spam-cache
@@ -369,7 +369,7 @@ pop3proxy_ham_cache: pop3proxy-ham-cache
 pop3proxy_unknown_cache: pop3proxy-unknown-cache
 
 # Deprecated - use pop3proxy_servers and pop3proxy_ports instead.
-pop3proxy_server_name: ""
+pop3proxy_server_name:
 pop3proxy_server_port: 110
 pop3proxy_port: 110
 

@@ -55,6 +55,10 @@ Web training interface:
  o Functional tests.
  o Review already-trained messages, and purge them.
  o Put in a link to view a message (plain text, html, multipart...?)
+ o Keyboard navigation (David Ascher).  But aren't Tab and left/right
+   arrow enough?
+ o [Francois Granger] Show the raw spambrob number close to the buttons
+   (this would mean using the extra X-Hammie header by default).
 
 
 User interface improvements:
@@ -67,6 +71,7 @@ User interface improvements:
  o Add a command to save the database without shutting down, and one to
    reload the database.
  o Save the stats (num classified, etc.) between sessions.
+ o "Reload database" button.
 
 
 New features:
@@ -80,6 +85,9 @@ New features:
  o Allow use of the UI without the POP3 proxy.
  o Remove any existing X-Hammie-Disposition header from incoming emails.
  o Whitelist.
+ o Online manual.
+ o Links to project homepage, mailing list, etc.
+ o Edit settings through the web.
 
 
 Code quality:
@@ -87,6 +95,7 @@ Code quality:
  o Move the UI into its own module.
  o Eventually, pull the common HTTP code from pop3proxy.py and Entrian
    Debugger into a library.
+ o Cope with the email client timing out and closing the connection.
 
 
 Info:
@@ -111,6 +120,7 @@ import os, sys, re, operator, errno, getopt, string, cStringIO, time, bisect
 import socket, asyncore, asynchat, cgi, urlparse, webbrowser
 import Bayes, tokenizer, mboxutils
 from FileCorpus import FileCorpus, FileMessageFactory, GzipFileMessageFactory
+from email.Iterators import typed_subpart_iterator
 from Options import options
 
 # HEADER_EXAMPLE is the longest possible header - the length of this one
@@ -139,12 +149,18 @@ class Listener(asyncore.dispatcher):
         self.listen(5)
 
     def handle_accept(self):
-        clientSocket, clientAddress = self.accept()
-        args = [clientSocket] + list(self.factoryArgs)
-        if self.socketMap != asyncore.socket_map:
-            self.factory(*args, **{'socketMap': self.socketMap})
-        else:
-            self.factory(*args)
+        # If an incoming connection is instantly reset, eg. by following a
+        # link in the web interface then instantly following another one or
+        # hitting stop, handle_accept() will be triggered but accept() will
+        # return None.
+        result = self.accept()
+        if result:
+            clientSocket, clientAddress = result
+            args = [clientSocket] + list(self.factoryArgs)
+            if self.socketMap != asyncore.socket_map:
+                self.factory(*args, **{'socketMap': self.socketMap})
+            else:
+                self.factory(*args)
 
 
 class BrighterAsyncChat(asynchat.async_chat):
@@ -791,12 +807,12 @@ class UserInterface(BrighterAsyncChat):
             print >>sys.stderr, "Warning: setFieldValue('%s') failed" % name
             return form
 
-    def trimAndQuote(self, field, limit):
+    def trimAndQuote(self, field, limit, quote=False):
         """Trims a string, adding an ellipsis if necessary, and
         HTML-quotes it."""
         if len(field) > limit:
             field = field[:limit-3] + "..."
-        return cgi.escape(field)
+        return cgi.escape(field, quote)
 
     def onHome(self, params):
         """Serve up the homepage."""
@@ -814,7 +830,7 @@ class UserInterface(BrighterAsyncChat):
         self.push("<b>Saving... ")
         self.push(' ')
         state.bayes.store()
-        self.push("Done</b>.")
+        self.push("Done</b>.\n")
 
     def onSave(self, params):
         """Command handler for "Save"."""
@@ -918,9 +934,23 @@ class UserInterface(BrighterAsyncChat):
                   <input type='radio' name='classify:%s' value='spam' %s>"""
         stripe = 0
         for key, message in keyedMessages:
-            # Parse the message and get the relevant headers.
+            # Parse the message and get the relevant headers and the first
+            # part of the body if we can.
             subject = self.trimAndQuote(message["Subject"] or "(none)", 50)
             from_ = self.trimAndQuote(message["From"] or "(none)", 40)
+            try:
+                part = typed_subpart_iterator(message, 'text', 'plain').next()
+                text = part.get_payload()
+            except StopIteration:
+                try:
+                    part = typed_subpart_iterator(message, 'text', 'html').next()
+                    text = tokenizer.html_re.sub(' ', part.get_payload())
+                    text = '(this message only has an HTML body)\n' + text
+                except StopIteration:
+                    text = '(this message has no text body)'
+            text = text.replace('&nbsp;', ' ')      # Else they'll be quoted
+            text = re.sub(r'(\s)\s+', r'\1', text)  # Eg. multiple blank lines
+            text = self.trimAndQuote(text.strip(), 200, True)
 
             # Output the table row for this message.
             defer = ham = spam = ""
@@ -930,6 +960,7 @@ class UserInterface(BrighterAsyncChat):
                 ham='checked'
             elif judgement == options.header_unsure_string:
                 defer='checked'
+            subject = "<span title=\"%s\">%s</span>" % (text, subject)
             radioGroup = buttons % (key, key, defer, key, ham, key, spam)
             stripeClass = ['stripe_on', 'stripe_off'][stripe]
             lines.append("""<tr class='%s'><td>%s</td><td>%s</td>
