@@ -100,6 +100,7 @@ Code quality:
  o Eventually, pull the common HTTP code from pop3proxy.py and Entrian
    Debugger into a library.
  o Cope with the email client timing out and closing the connection.
+ o Lose the trailing dot from cached messages.
 
 
 Info:
@@ -1194,15 +1195,15 @@ class UserInterface(BrighterAsyncChat):
     def onWordquery(self, params):
         word = params['word']
         word = word.lower()
-        try:
-            wi = state.bayes.wordinfo[word]
+        wi = state.bayes._wordinfoget(word)
+        if wi:
             members = wi.__dict__
             members['spamprob'] = state.bayes.probability(wi)
             info = """Number of spam messages: <b>%(spamcount)d</b>.<br>
                    Number of ham messages: <b>%(hamcount)d</b>.<br>
                    Probability that a message containing this word is spam:
                    <b>%(spamprob)f</b>.<br>""" % members
-        except KeyError:
+        else:
             info = "%r does not appear in the database." % word
 
         query = self.setFieldValue(self.wordQuery, 'word', params['word'])
