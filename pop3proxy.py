@@ -175,7 +175,9 @@ class BrighterAsyncChat(asynchat.async_chat):
     def handle_error(self):
         """Let SystemExit cause an exit."""
         type, v, t = sys.exc_info()
-        if type == SystemExit:
+        if type == socket.error and v[0] == 9:  # Why?  Who knows...
+            pass
+        elif type == SystemExit:
             raise
         else:
             asynchat.async_chat.handle_error(self)
