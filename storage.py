@@ -53,6 +53,12 @@ import errno
 import shelve
 import dbmstorage
 
+# Make shelve use binary pickles by default.
+oldShelvePickler = shelve.Pickler
+def binaryDefaultPickler(f, binary=1):
+    return oldShelvePickler(f, binary)
+shelve.Pickler = binaryDefaultPickler
+
 PICKLE_TYPE = 1
 NO_UPDATEPROBS = False   # Probabilities will not be autoupdated with training
 UPDATEPROBS = True       # Probabilities will be autoupdated with training
