@@ -38,6 +38,8 @@ setup(
            'hammiefilter.py',
            'pop3graph.py',
            'pop3proxy.py',
+           'proxytrainer.py',
+           'proxytee.py',
           ],
         packages = [ 'spambayes', ],
         classifiers = [
