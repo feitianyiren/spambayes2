@@ -105,7 +105,7 @@ class HammieFilter(object):
 def main():
     h = HammieFilter()
     action = h.filter
-    opts, args = getopt.getopt(sys.argv[1:], 'hngs')
+    opts, args = getopt.getopt(sys.argv[1:], 'hngsGS')
     for opt, arg in opts:
         if opt == '-h':
             usage(0)
@@ -113,6 +113,10 @@ def main():
             action = h.train_ham
         elif opt == '-s':
             action = h.train_spam
+        elif opt == '-G':
+            action = h.untrain_ham
+        elif opt == '-S':
+            action = h.untrain_spam
         elif opt == "-n":
             action = h.newdb
 
