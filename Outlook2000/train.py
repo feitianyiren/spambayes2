@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # Train a classifier from Outlook Mail folders
 # Authors: Sean D. True, WebReply.Com, Mark Hammond
 # October, 2002
@@ -103,9 +104,6 @@ def trainer(mgr, progress, rebuild):
         if progress.stop_requested():
             return
 
-    progress.tick()
-    progress.set_status('Updating probabilities...')
-    bayes.update_probabilities()
     progress.tick()
     if progress.stop_requested():
         return
