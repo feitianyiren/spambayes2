@@ -5,7 +5,7 @@ Author: spambayes
 <H2>What is SpamBayes?</h2>
 <p>
 This project is developing a Bayesian anti-spam classifier, initially
-based on the work of <a href="http://www.paulgraham.com/spam.html">Paul Graham.</a>
+based on the work of <a href="http://www.paulgraham.com/spam.html">Paul Graham.</a> A major difference between this project and many others that are doing similar work is the emphasis on testing and trialing newer and different approaches to scoring messages. While most projects are still working with the initial Graham approach, we found that a number of different approaches yielded a much more useful response. An attempt at documenting this is on the <a href="background.html">background</a> page.
 </p>
 
 <p>Code is currently available 
@@ -19,6 +19,8 @@ There are now a couple of end-user applications available for those
 excited by the bleeding edge - these are detailed on the 
 <a href="applications.html">Applications</a> page.
 </p>
+<p>We're currently working on packaging these up for end-user use - stay
+tuned!</p>
 
 <h2>Mailing list</h2>
 <p>There are currently two mailing lists of interest:</p>
