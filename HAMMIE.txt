@@ -59,6 +59,7 @@ Instructions:
     something like this:
 
       :0:
+      * ^X-Spambayes-Classification: spam
       $HOME/Mail/spam
 
     If you're not sure what format you use, ask your system
