@@ -685,7 +685,7 @@ class UserInterface(BrighterAsyncChat):
              using the <a href='review'>Review messages</a> page."""
 
     reviewHeader = """<p>These are untrained emails, which you can use to
-                   train the classifier.  Check the appropriate buttton for
+                   train the classifier.  Check the appropriate button for
                    each email, then click 'Train' below.  'Defer' leaves the
                    message here, to be trained on later.  Click one of the
                    Discard / Defer / Ham / Spam headers to check all of the
