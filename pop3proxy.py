@@ -83,7 +83,6 @@ New features:
    classified, etc."
  o Possibly integrate Tim Stone's SMTP code - make it use async, make
    the training code update (rather than replace!) the database.
- o Allow use of the UI without the POP3 proxy.
  o Remove any existing X-Spambayes-Classification header from incoming
    emails.
  o Whitelist.
@@ -94,8 +93,6 @@ New features:
 
 Code quality:
 
- o Make a separate Dibbler plugin for serving images, so there's no
-   duplication between pop3proxy and OptionConfig.
  o Move the UI into its own module.
  o Cope with the email client timing out and closing the connection.
  o Lose the trailing dot from cached messages.
@@ -556,10 +553,11 @@ class UserInterface(Dibbler.HTTPPlugin):
         return options.html_ui_allow_remote_connections or \
                clientSocket.getpeername()[0] == clientSocket.getsockname()[0]
 
-    def _writePreamble(self, name, showImage=True):
+    def _writePreamble(self, name, parent=None, showImage=True):
         """Writes the HTML for the beginning of a page - time-consuming
         methlets use this and `_writePostamble` to write the page in
-        pieces, including progress messages."""
+        pieces, including progress messages.  `parent` (if given) should
+        be a pair: `(url, label)`, eg. `('review', 'Review')`."""
 
         # Take the whole palette and remove the content and the footer,
         # leaving the header and an empty body.
@@ -573,6 +571,9 @@ class UserInterface(Dibbler.HTTPPlugin):
         if name == 'Home':
             del html.homelink
             html.pagename = "Home"
+        elif parent:
+            html.pagename = "> <a href='%s'>%s</a> > %s" % \
+                            (parent[0], parent[1], name)
         else:
             html.pagename = "> " + name
 
@@ -798,6 +799,7 @@ class UserInterface(Dibbler.HTTPPlugin):
                 row.defer.checked = 1
             row.subject = messageInfo.subjectHeader
             row.subject.title = messageInfo.bodySummary
+            row.subject.href="view?key=%s&corpus=%s" % (key, label)
             row.from_ = messageInfo.fromHeader
             setattr(row, 'class', ['stripe_on', 'stripe_off'][stripe]) # Grr!
             row = str(row).replace('TYPE', label).replace('KEY', key)
@@ -919,6 +921,16 @@ class UserInterface(Dibbler.HTTPPlugin):
             box = self._buildBox(title, 'status.gif', page)
 
         self.write(box)
+        self._writePostamble()
+
+    def onView(self, key, corpus):
+        """View a message - linked from the Review page."""
+        self._writePreamble("View message", parent=('review', 'Review'))
+        message = state.unknownCorpus.get(key)
+        if message:
+            self.write("<pre>%s</pre>" % cgi.escape(message.getSubstance()))
+        else:
+            self.write("<p>Can't find message %r. Maybe it expired.</p>" % key)
         self._writePostamble()
 
     def onClassify(self, file, text, which):
