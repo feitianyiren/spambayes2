@@ -42,17 +42,16 @@ def train_message(msg, is_spam, mgr, rescore=False):
     stream = msg.GetEmailPackageObject()
     if was_spam is not None:
         # The classification has changed; unlearn the old classification.
-        mgr.bayes.unlearn(tokenize(stream), was_spam, False)
+        mgr.bayes.unlearn(tokenize(stream), was_spam)
 
     # Learn the correct classification.
-    mgr.bayes.learn(tokenize(stream), is_spam, False)
+    mgr.bayes.learn(tokenize(stream), is_spam)
     mgr.message_db[msg.searchkey] = is_spam
     mgr.bayes_dirty = True
 
     # Simplest way to rescore is to re-filter with all_actions = False
     if rescore:
         import filter
-        mgr.bayes.update_probabilities()  # else rescoring gives the same score
         filter.filter_message(msg, mgr, all_actions = False)
 
     return True
