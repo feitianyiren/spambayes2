@@ -133,7 +133,7 @@ out while the proxy was downloading stuff from the server).
 
 import os, sys, re, operator, errno, getopt, string, cStringIO, time, bisect
 import socket, asyncore, asynchat, cgi, urlparse, webbrowser
-import mailbox, storage, tokenizer, mboxutils
+import mailbox, storage, tokenizer, mboxutils, email.Header
 from FileCorpus import FileCorpus, FileMessageFactory, GzipFileMessageFactory
 from email.Iterators import typed_subpart_iterator
 from Options import options
@@ -614,6 +614,7 @@ class UserInterface(BrighterAsyncChat):
                                border-bottom: 1px solid #808080;
                                font-weight: bold }
              .sectionbody { padding: 1em }
+             .reviewheaders a { color: #000000 }
              .stripe_on td { background: #f4f4f4 }
              </style>
              </head>\n"""
@@ -663,10 +664,11 @@ class UserInterface(BrighterAsyncChat):
              using the <a href='review'>Review messages</a> page."""
 
     reviewHeader = """<p>These are untrained emails, which you can use to
-                   train the classifier.  Check the Discard / Defer / Ham /
-                   Spam buttton for each email, then click 'Train' below.
-                   (Defer leaves the message here, to be trained on
-                   later.)</p>
+                   train the classifier.  Check the appropriate buttton for
+                   each email, then click 'Train' below.  'Defer' leaves the
+                   message here, to be trained on later.  Click one of the
+                   Discard / Defer / Ham / Spam headers to check all of the
+                   buttons in that section in one go.</p>
                    <form action='review' method='GET'>
                        <input type='hidden' name='prior' value='%d'>
                        <input type='hidden' name='next' value='%d'>
@@ -683,9 +685,36 @@ class UserInterface(BrighterAsyncChat):
                    <table class='messagetable' cellpadding='0' cellspacing='0'>
                    """
 
-    reviewSubheader = """<tr><td><b>Messages classified as %s:</b></td>
-                          <td><b>From:</b></td>
-                          <td><b>Discard / Defer / Ham / Spam</b></td></tr>"""
+    onReviewHeader = \
+    """<script type='text/javascript'>
+    function onHeader(type, switchTo)
+    {
+        if (document.forms && document.forms.length >= 2)
+        {
+            form = document.forms[1];
+            for (i = 0; i < form.length; i++)
+            {
+                splitName = form[i].name.split(':');
+                if (splitName.length == 3 && splitName[1] == type &&
+                    form[i].value == switchTo.toLowerCase())
+                {
+                    form[i].checked = true;
+                }
+            }
+        }
+    }
+    </script>
+    """
+
+    reviewSubheader = \
+        """<tr><td><b>Messages classified as %s:</b></td>
+          <td><b>From:</b></td>
+          <td class='reviewheaders'><b>
+              <a href='javascript: onHeader("%s", "Discard");'>Discard</a> /
+              <a href='javascript: onHeader("%s", "Defer");'>Defer</a> /
+              <a href='javascript: onHeader("%s", "Ham");'>Ham</a> /
+              <a href='javascript: onHeader("%s", "Spam");'>Spam</a>
+          </b></td></tr>"""
 
     upload = """<form action='%s' method='POST'
                 enctype='multipart/form-data'>
@@ -832,7 +861,12 @@ class UserInterface(BrighterAsyncChat):
 
     def trimAndQuote(self, field, limit, quote=False):
         """Trims a string, adding an ellipsis if necessary, and
-        HTML-quotes it."""
+        HTML-quotes it.  Also pumps it through email.Header.decode_header,
+        which understands charset sections in email headers - I suspect
+        this will only work for Latin character sets, but hey, it works for
+        Francois Granger's name.  8-)"""
+        sections = email.Header.decode_header(field)
+        field = ' '.join([text for text, _ in sections])
         if len(field) > limit:
             field = field[:limit-3] + "..."
         return cgi.escape(field, quote)
@@ -969,13 +1003,13 @@ class UserInterface(BrighterAsyncChat):
         # Return the keys and their date.
         return keys, date, prior, start, end
 
-    def appendMessages(self, lines, keyedMessages, judgement):
+    def appendMessages(self, lines, keyedMessages, label):
         """Appends the lines of a table of messages to 'lines'."""
         buttons = \
-             """<input type='radio' name='classify:%s' value='discard'>&nbsp;
-                <input type='radio' name='classify:%s' value='defer' %s>&nbsp;
-                <input type='radio' name='classify:%s' value='ham' %s>&nbsp;
-                <input type='radio' name='classify:%s' value='spam' %s>"""
+          """<input type='radio' name='classify:%s:%s' value='discard'>&nbsp;
+             <input type='radio' name='classify:%s:%s' value='defer' %s>&nbsp;
+             <input type='radio' name='classify:%s:%s' value='ham' %s>&nbsp;
+             <input type='radio' name='classify:%s:%s' value='spam' %s>"""
         stripe = 0
         for key, message in keyedMessages:
             # Parse the message and get the relevant headers and the first
@@ -1001,14 +1035,17 @@ class UserInterface(BrighterAsyncChat):
 
             # Output the table row for this message.
             defer = ham = spam = ""
-            if judgement == options.header_spam_string:
+            if label == 'Spam':
                 spam='checked'
-            elif judgement == options.header_ham_string:
+            elif label == 'Ham':
                 ham='checked'
-            elif judgement == options.header_unsure_string:
+            elif label == 'Unsure':
                 defer='checked'
             subject = "<span title=\"%s\">%s</span>" % (text, subject)
-            radioGroup = buttons % (key, key, defer, key, ham, key, spam)
+            radioGroup = buttons % (label, key,
+                                    label, key, defer,
+                                    label, key, ham,
+                                    label, key, spam)
             stripeClass = ['stripe_on', 'stripe_off'][stripe]
             lines.append("""<tr class='%s'><td>%s</td><td>%s</td>
                             <td><center>%s</center></td></tr>""" % \
@@ -1023,7 +1060,7 @@ class UserInterface(BrighterAsyncChat):
         numDeferred = 0
         for key, value in params.items():
             if key.startswith('classify:'):
-                id = key.split(':', 1)[1]
+                id = key.split(':')[2]
                 if value == 'spam':
                     targetCorpus = state.spamCorpus
                 elif value == 'ham':
@@ -1102,14 +1139,16 @@ class UserInterface(BrighterAsyncChat):
                 priorState = 'disabled'
             if not next:
                 nextState = 'disabled'
-            lines = [self.reviewHeader % (prior, next, priorState, nextState)]
-            for header, type in ((options.header_spam_string, 'Spam'),
-                                 (options.header_ham_string, 'Ham'),
-                                 (options.header_unsure_string, 'Unsure')):
+            lines = [self.onReviewHeader,
+                     self.reviewHeader % (prior, next, priorState, nextState)]
+            for header, label in ((options.header_spam_string, 'Spam'),
+                                  (options.header_ham_string, 'Ham'),
+                                  (options.header_unsure_string, 'Unsure')):
                 if keyedMessages[header]:
                     lines.append("<tr><td>&nbsp;</td><td></td><td></td></tr>")
-                    lines.append(self.reviewSubheader % type)
-                    self.appendMessages(lines, keyedMessages[header], header)
+                    lines.append(self.reviewSubheader %
+                                 (label, label, label, label, label))
+                    self.appendMessages(lines, keyedMessages[header], label)
 
             lines.append("""<tr><td></td><td></td><td align='middle'>&nbsp;<br>
                             <input type='submit' value='Train'></td></tr>""")
