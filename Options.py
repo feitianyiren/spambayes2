@@ -361,8 +361,11 @@ persistent_use_database: False
 pop3proxy_server_name: ""
 pop3proxy_server_port: 110
 pop3proxy_port: 110
-pop3proxy_cache_use_gzip: True
+pop3proxy_cache_use_gzip: False
 pop3proxy_cache_expiry_days: 7
+pop3proxy_spam_cache: pop3proxy-spam-cache
+pop3proxy_ham_cache: pop3proxy-ham-cache
+pop3proxy_unknown_cache: pop3proxy-unknown-cache
 
 [html_ui]
 html_ui_port: 8880
@@ -442,6 +445,9 @@ all_options = {
                   'pop3proxy_port': int_cracker,
                   'pop3proxy_cache_use_gzip': boolean_cracker,
                   'pop3proxy_cache_expiry_days': int_cracker,
+                  'pop3proxy_spam_cache': string_cracker,
+                  'pop3proxy_ham_cache': string_cracker,
+                  'pop3proxy_unknown_cache': string_cracker,
                   },
     'html_ui': {'html_ui_port': int_cracker,
                 'html_ui_launch_browser': boolean_cracker,
