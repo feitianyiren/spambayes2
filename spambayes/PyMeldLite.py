@@ -193,9 +193,18 @@ __version__ = "1.0"
 __author__ = "Richie Hindle <richie@entrian.com>"
 
 
+# Entrian.Coverage: Pragma Stop
+try:
+    # XXX Take this seriously before 2.4 comes out...
+    import warnings
+    warnings.filterwarnings(action='ignore',
+                            message='.*xmllib',
+                            category=DeprecationWarning)
+except ImportError:
+    pass
+
 import re, xmllib
 
-# Entrian.Coverage: Pragma Stop
 try:
     True, False, bool
 except NameError:
