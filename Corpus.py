@@ -367,7 +367,7 @@ class Message:
         data = re.sub(r'\r?\n\r?\s',' ',self.hdrtxt,re.MULTILINE)
         match = hdrregex.findall(data)
 
-	return match
+        return match
 
     def getHeaders(self):
         '''Return message headers as text'''
