@@ -384,7 +384,7 @@ pop3proxy_cache_expiry_days: 7
 pop3proxy_spam_cache: pop3proxy-spam-cache
 pop3proxy_ham_cache: pop3proxy-ham-cache
 pop3proxy_unknown_cache: pop3proxy-unknown-cache
-pop3proxy_persistent_use_database: False
+pop3proxy_persistent_use_database: True
 pop3proxy_persistent_storage_file: hammie.db
 
 # Deprecated - use pop3proxy_servers and pop3proxy_ports instead.
