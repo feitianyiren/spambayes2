@@ -175,7 +175,7 @@ def main():
                     num = DeleteField_MAPI(driver, folder, field_name)
                     print "Deleted", num, "field instances via MAPI"
                 if do_folder:
-                    num = DeleteField_Folder(folder, field_name)
+                    num = DeleteField_Folder(driver, folder, field_name)
                     if num:
                         print "Deleted property from folder"
                     else:
