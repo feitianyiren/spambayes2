@@ -138,14 +138,14 @@ try:
 except ImportError:
     import StringIO
 
-import os, sys, re, operator, errno, getopt, string, time, bisect
-import socket, asyncore, asynchat, cgi, urlparse, webbrowser
+import os, sys, re, operator, errno, getopt, time, bisect
+import socket, asyncore, asynchat, cgi
 import mailbox, email.Header
+from email.Iterators import typed_subpart_iterator
 import spambayes
 from spambayes import storage, tokenizer, mboxutils, PyMeldLite, Dibbler
 from spambayes.FileCorpus import FileCorpus, ExpiryFileCorpus
 from spambayes.FileCorpus import FileMessageFactory, GzipFileMessageFactory
-from email.Iterators import typed_subpart_iterator
 from spambayes.OptionConfig import OptionsConfigurator
 from spambayes.Options import options
 
@@ -162,6 +162,8 @@ class ServerLineReader(Dibbler.BrighterAsyncChat):
     simply calls a callback with the data.  The BayesProxy object
     can't connect to the real POP3 server and talk to it
     synchronously, because that would block the process."""
+
+    lineCallback = None
 
     def __init__(self, serverName, serverPort, lineCallback):
         Dibbler.BrighterAsyncChat.__init__(self)
