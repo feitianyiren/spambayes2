@@ -1,12 +1,12 @@
 #! /usr/bin/env python
 
-"""DBDict.py - Dictionary access to dbhash
+"""DBDict.py - Dictionary access to anydbm
 
 Classes:
-    DBDict - wraps a dbhash file
+    DBDict - wraps an anydbm file
 
 Abstract:
-    DBDict class wraps a dbhash file with a reasonably complete set
+    DBDict class wraps an anydbm file with a reasonably complete set
     of dictionary access methods.  DBDicts can be iterated like a dictionary.
     
     The constructor accepts a class name which is used specifically to
@@ -56,7 +56,7 @@ try:
 except ImportError:
     import pickle
 
-import dbhash
+import anydbm
 import errno
 import copy
 import shutil
@@ -71,7 +71,7 @@ MODE_READONLY = 'r'     # open existing file for read only
 class DBDict:
     """Database Dictionary.
 
-    This wraps a dbhash database to make it look even more like a
+    This wraps an anydbm database to make it look even more like a
     dictionary, much like the built-in shelf class.  The difference is
     that a DBDict supports all dict methods.
 
@@ -91,7 +91,7 @@ class DBDict:
     """
 
     def __init__(self, dbname, mode, wclass, iterskip=()):
-        self.hash = dbhash.open(dbname, mode)
+        self.hash = anydbm.open(dbname, mode)
         if not iterskip:
             self.iterskip = iterskip
         else:

@@ -45,7 +45,6 @@ import mailbox
 import glob
 import email
 import errno
-import anydbm
 import cPickle as pickle
 
 from Options import options
