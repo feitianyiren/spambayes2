@@ -194,17 +194,7 @@ __author__ = "Richie Hindle <richie@entrian.com>"
 
 
 # Entrian.Coverage: Pragma Stop
-try:
-    # XXX Take this seriously before 2.4 comes out...
-    import warnings
-    warnings.filterwarnings(action='ignore',
-                            message='.*xmllib',
-                            category=DeprecationWarning)
-except ImportError:
-    pass
-
-import re, xmllib
-
+import sys, re, string
 try:
     True, False, bool
 except NameError:
@@ -222,10 +212,12 @@ _fail = _Fail()
 # Non-self-closing tags; see the module documentation.
 nonSelfClose = {'textarea': None}
 
-# Map characters not allowed in XML content to '?'
-import string
-badxml_chars = ''.join([chr(c) for c in range(0, 32) + range(128, 160)
-                               if c not in [9, 10, 13]])
+# Map high characters to charrefs.
+def replaceHighCharacters(match):
+    return "&#%d;" % ord(match.group(1))
+
+# Map meaningless low characters to '?'
+badxml_chars = ''.join([chr(c) for c in range(0, 32) if c not in [9, 10, 13]])
 badxml_map = string.maketrans(badxml_chars, '?' * len(badxml_chars))
 
 
@@ -358,98 +350,192 @@ class _TextNode(_Node):
         return self._text
 
 
-class _TreeGenerator(xmllib.XMLParser):
-    """An XML parser that generates a lightweight DOM tree.  Call `feed()`
-    with XML source, then `close()`, then `getTree()` will give you the
-    tree's `_RootNode`:
+# For XML parsing we use xmllib in versions prior to 2.3, because we can't
+# be sure that expat will be there, or that it will be a decent version.
+# We use expat in versions 2.3 and above, because we can be sure it will
+# be there and xmllib is deprecated from 2.3.
 
-    >>> g = _TreeGenerator()
-    >>> g.feed("<xml>Stuff. ")
-    >>> g.feed("More stuff.</xml>")
-    >>> g.close()
-    >>> tree = g.getTree()
-    >>> print tree.toText()
-    <xml>Stuff. More stuff.</xml>
-    """
+# The slightly odd Entrian.Coverage pragmas in this section make sure that
+# whichever branch is taken, we get code coverage for that branch and no
+# coverage failures for the other.
+if sys.hexversion >> 16 < 0x203:
+    # Entrian.Coverage: Pragma Stop
+    import xmllib
+    class _TreeGenerator(xmllib.XMLParser):
+        # Entrian.Coverage: Pragma Start
+        """An XML parser that generates a lightweight DOM tree.  Call `feed()`
+        with XML source, then `close()`, then `getTree()` will give you the
+        tree's `_RootNode`:
 
-    def __init__(self):
-        xmllib.XMLParser.__init__(self, translate_attribute_references=False)
-        self.entitydefs = {}    # entitydefs is an xmllib.XMLParser attribute.
-        self._tree = _RootNode()
-        self._currentNode = self._tree
-        self._pendingText = []
+        >>> g = _TreeGenerator()
+        >>> g.feed("<xml>Stuff. ")
+        >>> g.feed("More stuff.</xml>")
+        >>> g.close()
+        >>> tree = g.getTree()
+        >>> print tree.toText()
+        <xml>Stuff. More stuff.</xml>
+        """
 
-    def getTree(self):
-        """Returns the generated tree; call `feed()` then `close()` first."""
-        return self._tree
+        def __init__(self):
+            xmllib.XMLParser.__init__(self,
+                                      translate_attribute_references=False)
+            self.entitydefs = {}    # This is an xmllib.XMLParser attribute.
+            self._tree = _RootNode()
+            self._currentNode = self._tree
+            self._pendingText = []
 
-    def _collapsePendingText(self):
-        """Text (any content that isn't an open/close element) is built up
-        in `self._pendingText` until an open/close element is seen, at which
-        point it gets collapsed into a `_TextNode`."""
+        def getTree(self):
+            """Returns the generated tree; call `feed` then `close` first."""
+            return self._tree
 
-        data = ''.join(self._pendingText)
-        self._currentNode.children.append(_TextNode(data))
-        self._pendingText = []
+        def _collapsePendingText(self):
+            """Text (any content that isn't an open/close element) is built up
+            in `self._pendingText` until an open/close element is seen, at
+            which point it gets collapsed into a `_TextNode`."""
 
-    def handle_xml(self, encoding, standalone):
-        xml = '<?xml version="1.0"'
-        if encoding:
-            xml += ' encoding="%s"' % encoding
-        if standalone:
-            xml += ' standalone="%s"' % standalone
-        xml += '?>'
-        self._pendingText.append(xml)
+            data = ''.join(self._pendingText)
+            self._currentNode.children.append(_TextNode(data))
+            self._pendingText = []
 
-    def handle_doctype(self, tag, pubid, syslit, data):
-        doctype = '<!DOCTYPE %s' % tag
-        if pubid:
-            doctype += ' PUBLIC "%s"' % pubid
-        elif syslit:
-            doctype += ' SYSTEM'
-        if syslit:
-            doctype += ' "%s"' % syslit
-        if data:
-            doctype += ' [%s]>' % data
-        else:
-            doctype += '>'
-        self._pendingText.append(doctype)
+        def handle_xml(self, encoding, standalone):
+            xml = '<?xml version="1.0"'
+            if encoding:
+                xml += ' encoding="%s"' % encoding
+            if standalone:
+                xml += ' standalone="%s"' % standalone
+            xml += '?>'
+            self._pendingText.append(xml)
 
-    def handle_comment(self, data):
-        self._pendingText.append('<!--%s-->' % data)
+        def handle_doctype(self, tag, pubid, syslit, data):
+            doctype = '<!DOCTYPE %s' % tag
+            if pubid:
+                doctype += ' PUBLIC "%s"' % pubid
+            elif syslit:
+                doctype += ' SYSTEM'
+            if syslit:
+                doctype += ' "%s"' % syslit
+            if data:
+                doctype += ' [%s]>' % data
+            else:
+                doctype += '>'
+            self._pendingText.append(doctype)
 
-    def handle_proc(self, name, data):
-        self._pendingText.append('<?%s %s ?>' % (name, data.strip()))
+        def handle_comment(self, data):
+            self._pendingText.append('<!--%s-->' % data)
 
-    def handle_data(self, data):
-        self._pendingText.append(data)
+        def handle_proc(self, name, data):
+            self._pendingText.append('<?%s %s ?>' % (name, data.strip()))
 
-    def handle_charref(self, ref):
-        self._pendingText.append('&#%s;' % ref)
+        def handle_data(self, data):
+            self._pendingText.append(data)
 
-    unknown_charref = handle_charref
+        def handle_charref(self, ref):
+            self._pendingText.append('&#%s;' % ref)
 
-    def handle_entityref(self, ref):
-        self._pendingText.append('&%s;' % ref)
+        unknown_charref = handle_charref
 
-    unknown_entityref = handle_entityref
+        def handle_entityref(self, ref):
+            self._pendingText.append('&%s;' % ref)
 
-    def handle_cdata(self, data):
-        if self._pendingText:
-            self._collapsePendingText()
-        self._pendingText.append('<![CDATA[%s]]>' % data)
+        unknown_entityref = handle_entityref
 
-    def unknown_starttag(self, tag, attributes):
-        if self._pendingText:
-            self._collapsePendingText()
-        newNode = _ElementNode(self._currentNode, tag, attributes)
-        self._currentNode.children.append(newNode)
-        self._currentNode = newNode
+        def handle_cdata(self, data):
+            if self._pendingText:
+                self._collapsePendingText()
+            self._pendingText.append('<![CDATA[%s]]>' % data)
 
-    def unknown_endtag(self, tag):
-        if self._pendingText:
-            self._collapsePendingText()
-        self._currentNode = self._currentNode.parent
+        def unknown_starttag(self, tag, attributes):
+            if self._pendingText:
+                self._collapsePendingText()
+            newNode = _ElementNode(self._currentNode, tag, attributes)
+            self._currentNode.children.append(newNode)
+            self._currentNode = newNode
+
+        def unknown_endtag(self, tag):
+            if self._pendingText:
+                self._collapsePendingText()
+            self._currentNode = self._currentNode.parent
+
+else:
+    # Entrian.Coverage: Pragma Stop
+    import xml.parsers.expat
+    class _TreeGenerator:
+        # Entrian.Coverage: Pragma Start
+        """An XML parser that generates a lightweight DOM tree.  Call `feed()`
+        with XML source, then `close()`, then `getTree()` will give you the
+        tree's `_RootNode`:
+
+        >>> g = _TreeGenerator()
+        >>> g.feed("<xml>Stuff. ")
+        >>> g.feed("More stuff.</xml>")
+        >>> g.close()
+        >>> tree = g.getTree()
+        >>> print tree.toText()
+        <xml>Stuff. More stuff.</xml>
+        """
+
+        def __init__(self):
+            self._tree = _RootNode()
+            self._currentNode = self._tree
+            self._pendingText = []
+            self._parser = xml.parsers.expat.ParserCreate()
+            self._parser.buffer_text = True
+            self._parser.DefaultHandler = self.DefaultHandler
+            self._parser.StartElementHandler = self.StartElementHandler
+            self._parser.EndElementHandler = self.EndElementHandler
+
+        # All entities and charrefs, like &bull; and &#160;, are considered
+        # valid - who are we to argue?  Expat thinks it knows better, so we
+        # fool it here.
+        def _mungeEntities(self, data):
+            return re.sub(r'&(\w+);', r':PyMeldEntity:\1:', data)
+
+        def _unmungeEntities(self, data):
+            return re.sub(r':PyMeldEntity:(\w+):', r'&\1;', data)
+
+        def feed(self, data):
+            """Call this with XML content to be parsed."""
+            data = self._mungeEntities(data)
+            self._parser.Parse(data)
+
+        def close(self):
+            """Call this when you've passed all your XML content to `feed`."""
+            self._parser.Parse("", True)
+
+        def getTree(self):
+            """Returns the generated tree; call `feed` then `close` first."""
+            return self._tree
+
+        def _collapsePendingText(self):
+            """Text (any content that isn't an open/close element) is built up
+            in `self._pendingText` until an open/close element is seen, at
+            which point it gets collapsed into a `_TextNode`."""
+
+            data = ''.join(self._pendingText)
+            data = self._unmungeEntities(data)
+            self._currentNode.children.append(_TextNode(data))
+            self._pendingText = []
+
+        def DefaultHandler(self, data):
+            """Expat handler."""
+            self._pendingText.append(str(data))
+
+        def StartElementHandler(self, tag, attributes):
+            """Expat handler."""
+            if self._pendingText:
+                self._collapsePendingText()
+            newAttributes = {}
+            for name, value in attributes.iteritems():
+                newAttributes[str(name)] = self._unmungeEntities(str(value))
+            newNode = _ElementNode(self._currentNode, str(tag), newAttributes)
+            self._currentNode.children.append(newNode)
+            self._currentNode = newNode
+
+        def EndElementHandler(self, tag):
+            """Expat handler."""
+            if self._pendingText:
+                self._collapsePendingText()
+            self._currentNode = self._currentNode.parent
 
 
 def _generateTree(source):
@@ -479,8 +565,9 @@ def _generateTree(source):
         source = source[:match.start(1)] + match.group(2) + \
                  source[match.end(1):]
 
-    # Map characters not allowed in XML content to '?'
+    # Map characters not allowed in XML content to sensible things.
     source = source.translate(badxml_map)
+    source = re.sub('([\x80-\xff])', replaceHighCharacters, source)
 
     # Parse the XML and generate the tree.
     g = _TreeGenerator()
@@ -888,18 +975,16 @@ __test__ = {
 """,
 
 'XML proc': """
->>> print Meld('''<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+>>> print Meld('''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 ... <?codewarrior exportversion="1.0.1" ideversion="4.2" ?>
 ... <!DOCTYPE PROJECT [
 ... <!ELEMENT PROJECT (TARGETLIST, TARGETORDER, GROUPLIST, DESIGNLIST?)>
-... (...etc...)
 ... ]>
 ... <PROJECT>Stuff</PROJECT>''')
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <?codewarrior exportversion="1.0.1" ideversion="4.2" ?>
 <!DOCTYPE PROJECT [
 <!ELEMENT PROJECT (TARGETLIST, TARGETORDER, GROUPLIST, DESIGNLIST?)>
-(...etc...)
 ]>
 <PROJECT>Stuff</PROJECT>
 """,
@@ -912,13 +997,9 @@ __test__ = {
 
 'entities and charrefs': """
 >>> page = Meld('''<html><body>&bull; This "and&#160;that"...
-... <span id="s" title="&quot;Quoted&quot; & Not">x</span></body></html>''')
+... <span id="s" title="&quot;Quoted&quot; &amp; Not">x</span></body></html>''')
 >>> print page.s.title
 "Quoted" & Not
->>> page.s.title = page.s.title     # Accept liberally, produce strictly.
->>> print page
-<html><body>&bull; This "and&#160;that"...
-<span id="s" title="&quot;Quoted&quot; &amp; Not">x</span></body></html>
 >>> page.s.title = page.s.title + " <>"
 >>> print page.s.title
 "Quoted" & Not <>
@@ -1067,11 +1148,11 @@ AttributeError: _private
 
 'bad XML characters': """
 >>> page = Meld('''<x>
-... Valentines Day Special \x96 2 bikinis for the price of one
+... Valentines Day Special \x96 2 bikinis for the price of one \x01
 ... </x>''')    # No exception.
 >>> print page
 <x>
-Valentines Day Special ? 2 bikinis for the price of one
+Valentines Day Special &#150; 2 bikinis for the price of one ?
 </x>
 """
 }
