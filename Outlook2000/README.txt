@@ -64,7 +64,8 @@ Known Problems
   of the field is "Integer" (the last option), NOT "Number".  This is only
   necessary for you to *see* the score, not for the scoring to work.
 
-* Filtering an Exchange Server public store appears to not work.
+* Filtering an Exchange Server public store appears to not work (is this 
+  still true?)
 
 * Sean reports bad output saving very large classifiers in training.py.
   Somewhere over 4MB, they seem to stop working.  Mark's hasn't got
@@ -78,11 +79,10 @@ Licensed under PSF, see Tim Peters for IANAL interpretation.
 Copyright transferred to PSF from Mark Hammond.
 Licensed under PSF, see Tim Peters for IANAL interpretation.
 
-Ask me technical questions, and if your mail doesn't get eaten by a broken
-spam filter, I'll try to help.
+Please send all comments, queries, support questions etc to the SpamBayes
+mailing list - see http://mail.python.org/mailman-21/listinfo/spambayes
+
 -- Sean
 seant@iname.com
-
-Ask Sean all the technical questions <wink>
 -- Mark
 mhammond@skippinet.com.au
