@@ -194,6 +194,9 @@ def TestSpamFilter(driver):
         was_spam = train.untrain_message(store_msg, driver.manager)
         if not was_spam:
             TestFailed("Untraining this message did not indicate it was spam")
+        if train.been_trained_as_spam(store_msg, driver.manager) or \
+           train.been_trained_as_ham(store_msg, driver.manager):
+            TestFailed("Untraining this message kept it has ham/spam")
         need_untrain = False
     finally:
         if need_untrain:

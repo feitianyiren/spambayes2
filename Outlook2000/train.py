@@ -67,10 +67,14 @@ def untrain_message(msg, mgr):
     if been_trained_as_spam(msg, mgr):
         assert not been_trained_as_ham(msg, mgr), "Can't have been both!"
         mgr.bayes.unlearn(tokenize(stream), True)
+        del mgr.message_db[msg.searchkey]
+        mgr.bayes_dirty = True
         return True
     if been_trained_as_ham(msg, mgr):
         assert not been_trained_as_spam(msg, mgr), "Can't have been both!"
         mgr.bayes.unlearn(tokenize(stream), False)
+        del mgr.message_db[msg.searchkey]
+        mgr.bayes_dirty = True
         return False
     return None
 
