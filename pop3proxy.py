@@ -138,7 +138,12 @@ Adam's idea: add checkboxes to a Google results list for "Relevant" /
 highest-scoring tokens and excluding the lowest-scoring ones.
 """
 
-import os, sys, re, operator, errno, getopt, string, cStringIO, time, bisect
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
+
+import os, sys, re, operator, errno, getopt, string, time, bisect
 import socket, asyncore, asynchat, cgi, urlparse, webbrowser
 import mailbox, email.Header
 from spambayes import storage, tokenizer, mboxutils
@@ -793,7 +798,7 @@ class UserInterface(BrighterAsyncChat):
                 contentType, pdict = cgi.parse_header(contentTypeHeader)
                 if contentType == 'multipart/form-data':
                     # multipart/form-data - probably a file upload.
-                    bodyFile = cStringIO.StringIO(body)
+                    bodyFile = StringIO.StringIO(body)
                     params.update(cgi.parse_multipart(bodyFile, pdict))
                 else:
                     # A normal x-www-form-urlencoded.
@@ -933,7 +938,7 @@ class UserInterface(BrighterAsyncChat):
             class SimpleMessage:
                 def __init__(self, fp):
                     self.guts = fp.read()
-            contentFile = cStringIO.StringIO(content)
+            contentFile = StringIO.StringIO(content)
             mbox = mailbox.PortableUnixMailbox(contentFile, SimpleMessage)
             messages = map(lambda m: m.guts, mbox)
         else:

@@ -23,7 +23,10 @@ import cgi
 import shutil
 import mimetypes
 import re
-from StringIO import StringIO
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
 
 
 class SmarterHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
@@ -95,7 +98,7 @@ class SmarterHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             if hasattr(self, methname):
                 self.send_response(200)
                 retstr = getattr(self, methname)(pdict)
-                f = StringIO(retstr)
+                f = StringIO.StringIO(retstr)
                 self.send_header("Content-type", 'text/html')
                 self.end_headers()
             else:
