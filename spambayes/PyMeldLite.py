@@ -222,6 +222,12 @@ _fail = _Fail()
 # Non-self-closing tags; see the module documentation.
 nonSelfClose = {'textarea': None}
 
+# Map characters not allowed in XML content to '?'
+import string
+badxml_chars = ''.join([chr(c) for c in range(0, 32) + range(128, 160)
+                               if c not in [9, 10, 13]])
+badxml_map = string.maketrans(badxml_chars, '?' * len(badxml_chars))
+
 
 ###########################################################################
 ##
@@ -446,28 +452,9 @@ class _TreeGenerator(xmllib.XMLParser):
         self._currentNode = self._currentNode.parent
 
 
-# Versions of xmllib from 1.5.2 to 2.2.2 (and probably beyond) are
-# broken with respect to unicode, in that they use string.maketrans().
-# If the xmllib we're using looks broken, we create an object that will
-# fix it, and transiently apply the fix when parsing unicode XML.
-fixedAttrtrans = None
-if hasattr(xmllib, 'attrtrans') and isinstance(xmllib.attrtrans, str):
-    class UnicodeAttrtrans:
-        def __getitem__(self, c):
-            if unichr(c) in ' \r\n\t':
-                return ord(u' ')
-            return c
-    fixedAttrtrans = UnicodeAttrtrans()
-
-
 def _generateTree(source):
     """Given some XML source, generates a lightweight DOM tree rooted at a
     `_RootNode`."""
-
-    # Fix xmllib if necessary.
-    if isinstance(source, unicode) and fixedAttrtrans:
-        originalAttrtrans = xmllib.attrtrans
-        xmllib.attrtrans = fixedAttrtrans
 
     # Lots of HTML files start with a DOCTYPE declaration like this:
     #   <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
@@ -492,14 +479,13 @@ def _generateTree(source):
         source = source[:match.start(1)] + match.group(2) + \
                  source[match.end(1):]
 
+    # Map characters not allowed in XML content to '?'
+    source = source.translate(badxml_map)
+
     # Parse the XML and generate the tree.
     g = _TreeGenerator()
     g.feed(source)
     g.close()
-
-    # Put xmllib back again.
-    if isinstance(source, unicode) and fixedAttrtrans:
-        xmllib.attrtrans = originalAttrtrans
 
     # Get the tree and put the DOCTYPE back in if we hacked it out above.
     tree = g.getTree()
@@ -531,12 +517,12 @@ class Meld:
         says."""
 
         self._readonly = readonly
-        if isinstance(source, (str, unicode)):
+        if isinstance(source, str):
             self._tree = _generateTree(source)
         elif isinstance(source, _Node): # For internal use only.
             self._tree = source
         else:
-            raise TypeError, "Melds must be constructed from strings"
+            raise TypeError, "Melds must be constructed from ASCII strings"
 
     def _findByID(self, node, name):
         """Returns the node with the given ID, or None."""
@@ -550,7 +536,7 @@ class Meld:
     def _quoteAttribute(self, value):
         """Minimally quotes an attribute value, using `&quot;`, `&amp;`,
         `&lt;` and `&gt;`."""
-        if not isinstance(value, (str, unicode)):
+        if not isinstance(value, str):
             value = str(value)
         value = value.replace('"', '&quot;')
         value = value.replace('<', '&lt;').replace('>', '&gt;')
@@ -576,7 +562,7 @@ class Meld:
         if isinstance(value, Meld):
             node.children = [value._tree.getElementNode().clone()]
         else:
-            if not isinstance(value, (str, unicode)):
+            if not isinstance(value, str):
                 value = str(value)
             node.children = self._nodeListFromSource(value)
 
@@ -773,7 +759,7 @@ class Meld:
             keys = values.keys()
             sequence = values.values()
         elif hasattr(values, '__getitem__') and \
-             not isinstance(values, (str, unicode)):
+             not isinstance(values, str):
             # It's a sequence.
             keys = None
             sequence = list(values)
@@ -841,12 +827,6 @@ class Meld:
         `str(object)`.  `print` does this automatically, which is why
         none of the examples calls `str`."""
         return str(self._tree.toText())
-
-    def __unicode__(self):
-        """Returns the XML that this `Meld` represents.  Don't call
-        this directly - instead convert a `Meld` to unicode using
-        `unicode(object)`."""
-        return unicode(self._tree.toText())
 
 
 ###########################################################################
@@ -977,7 +957,7 @@ __test__ = {
 >>> page = Meld(1)
 Traceback (most recent call last):
 ...
-TypeError: Melds must be constructed from strings
+TypeError: Melds must be constructed from ASCII strings
 """,
 
 'accessing a non-existent attribute': """
@@ -1058,18 +1038,11 @@ x<span id="one">1</span>
 <html><span id="one">1y<z/></span></html>
 """,
 
-# This is just a smoke-test; proper Unicode support is untested, though
-# the code does attempt to be unicode-friendly, and to work around a
-# unicode-related bug in xmllib.
-'unicode': r"""
+'no unicode': r"""
 >>> u = Meld(u'<html><span id="one">One</span></html>')
->>> a = Meld('<html><span id="two">Two</span></html>')
->>> u.one = a.two
->>> print repr(unicode(u))
-u'<html><span id="one"><span id="two">Two</span></span></html>'
->>> a.two = Meld(u'<x a="Unicode\nValue"/>')
->>> print a
-<html><span id="two"><x a="Unicode Value"/></span></html>
+Traceback (most recent call last):
+...
+TypeError: Melds must be constructed from ASCII strings
 """,
 
 'private attributes': """
@@ -1091,6 +1064,16 @@ AttributeError: _private
 >>> print page
 <html>x</html>
 """,
+
+'bad XML characters': """
+>>> page = Meld('''<x>
+... Valentines Day Special \x96 2 bikinis for the price of one
+... </x>''')    # No exception.
+>>> print page
+<x>
+Valentines Day Special ? 2 bikinis for the price of one
+</x>
+"""
 }
 
 
