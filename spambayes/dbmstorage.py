@@ -1,6 +1,6 @@
 """Wrapper to open an appropriate dbm storage type."""
 
-from Options import options
+from spambayes.Options import options
 import sys
 
 class error(Exception):

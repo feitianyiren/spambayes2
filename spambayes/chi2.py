@@ -96,7 +96,7 @@ def normIP(p):
     return z + (p - normP(z)) / normZ(z)
 
 def main():
-    from Histogram import Hist
+    from spambayes.Histogram import Hist
     import sys
 
     class WrappedRandom:

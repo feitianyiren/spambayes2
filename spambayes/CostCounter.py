@@ -1,4 +1,4 @@
-from Options import options
+from spambayes.Options import options
 
 class CostCounter:
     name = "Superclass Cost"

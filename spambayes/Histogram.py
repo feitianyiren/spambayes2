@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import math
 
-from Options import options
+from spambayes.Options import options
 
 try:
     True, False

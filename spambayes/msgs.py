@@ -3,7 +3,7 @@ from __future__ import generators
 import os
 import random
 
-from tokenizer import tokenize
+from spambayes.tokenizer import tokenize
 
 HAMTEST  = None
 SPAMTEST = None

@@ -34,11 +34,8 @@ Where OPTIONS is one or more of:
         quiet mode; no output
 """
 
-import mboxutils
-import getopt
-import hammie
-import sys
-import os
+import sys, os, getopt
+from spambayes import hammie, mboxutils
 
 program = sys.argv[0]
 TRAINED_HDR = "X-Spambayes-Trained"

@@ -92,9 +92,9 @@ except NameError:
 
 import sys           # for output of docstring
 import time
-import tokenizer
 import re
-from Options import options
+from spambayes import tokenizer
+from spambayes.Options import options
 
 SPAM = True
 HAM = False

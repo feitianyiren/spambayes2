@@ -39,9 +39,7 @@ with a new header containing the score, will be send to stdout.
 import os
 import sys
 import getopt
-import hammie
-import Options
-import StringIO
+from spambayes import hammie, Options, StringIO
 
 # See Options.py for explanations of these properties
 program = sys.argv[0]

@@ -43,14 +43,14 @@ def import_core_spambayes_stuff(ini_filename):
 
     os.environ["BAYESCUSTOMIZE"] = ini_filename
     try:
-        import classifier
+        from spambayes import classifier
     except ImportError:
         parent = os.path.abspath(os.path.join(os.path.dirname(this_filename),
                                               ".."))
         sys.path.insert(0, parent)
 
-    import classifier
-    from tokenizer import tokenize
+    from spambayes import classifier
+    from spambayes.tokenizer import tokenize
     bayes_classifier = classifier
     bayes_tokenize = tokenize
 

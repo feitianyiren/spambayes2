@@ -84,10 +84,10 @@ __credits__ = "Richie Hindle, Tim Peters, all the spambayes contributors."
 
 from __future__ import generators
 
-import Corpus
-import storage
+from spambayes import Corpus
+from spambayes import storage
 import sys, os, gzip, fnmatch, getopt, errno, time, stat
-from Options import options
+from spambayes.Options import options
 
 class FileCorpus(Corpus.Corpus):
 

@@ -1,4 +1,4 @@
-from Options import options
+from spambayes.Options import options
 
 try:
     True, False
@@ -149,8 +149,8 @@ class _Example:
         return iter(self.words)
 
 _easy_test = """
-    >>> from classifier import Bayes
-    >>> from Options import options
+    >>> from spambayes.classifier import Bayes
+    >>> from spambayes.Options import options
     >>> options.ham_cutoff = options.spam_cutoff = 0.5
 
     >>> good1 = _Example('', ['a', 'b', 'c'])

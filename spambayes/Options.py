@@ -6,7 +6,11 @@
 import sys, os
 import StringIO
 import ConfigParser
-from sets import Set
+try: 
+    from sets import Set
+except ImportError:
+    from spambayes.compatsets import Set
+
 
 try:
     True, False, bool

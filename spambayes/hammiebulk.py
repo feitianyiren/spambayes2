@@ -55,11 +55,8 @@ import email
 import errno
 import cPickle as pickle
 
-from Options import options
-import mboxutils
-import classifier
-import hammie
-import Corpus
+from spambayes.Options import options
+from spambayes import classifier, mboxutils, hammie, Corpus
 
 Corpus.Verbose = True
 

@@ -54,12 +54,12 @@ except NameError:
     def bool(val):
         return not not val
 
-import classifier
-from Options import options
+from spambayes import classifier
+from spambayes.Options import options
 import cPickle as pickle
 import errno
 import shelve
-import dbmstorage
+from spambayes import dbmstorage
 
 # Make shelve use binary pickles by default.
 oldShelvePickler = shelve.Pickler

@@ -22,11 +22,11 @@ import time
 import signal
 import socket
 import email
-import mboxutils
+from spambayes import mboxutils
 
-import cdb
-from tokenizer import tokenize
-import classifier
+from spambayes import cdb
+from spambayes.tokenizer import tokenize
+from spambayes import classifier
 
 
 try:

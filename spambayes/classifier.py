@@ -32,10 +32,13 @@
 # This implementation is due to Tim Peters et alia.
 
 import math
-from sets import Set
+try:
+    from sets import Set
+except ImportError:
+    from spambayes.compatsets import Set
 
-from Options import options
-from chi2 import chi2Q
+from spambayes.Options import options
+from spambayes.chi2 import chi2Q
 
 try:
     True, False

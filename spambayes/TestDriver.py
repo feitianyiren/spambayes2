@@ -21,14 +21,22 @@
 # # Display stats against all runs.
 # alldone()
 
-from sets import Set
-import cPickle as pickle
-from heapq import heapreplace
+try: 
+    from sets import Set
+except ImportError:
+    from spambayes.compatsets import Set
 
-from Options import options
-import Tester
-import classifier
-from Histogram import Hist
+import cPickle as pickle
+
+try: 
+    from heapq import heapreplace
+except ImportError:
+    from spambayes.compatheapq import heapreplace
+
+from spambayes.Options import options
+from spambayes import Tester
+from spambayes import classifier
+from spambayes.Histogram import Hist
 
 try:
     True, False
@@ -143,7 +151,7 @@ class Driver:
         self.global_spam_hist = Hist()
         self.ntimes_finishtest_called = 0
         self.new_classifier()
-        import CostCounter
+        from spambayes import CostCounter
         self.cc=CostCounter.default()
 
     def new_classifier(self):

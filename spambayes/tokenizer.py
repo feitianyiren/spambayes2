@@ -12,12 +12,15 @@ import re
 import math
 import time
 import os
-from sets import Set
+try: 
+    from sets import Set
+except ImportError:
+    from spambayes.compatsets import Set
 
-from Options import options
 
-import mboxutils
-from mboxutils import get_message
+from spambayes.Options import options
+
+from spambayes.mboxutils import get_message
 
 try:
     True, False

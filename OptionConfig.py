@@ -29,7 +29,7 @@ __author__ = "Tim Stone <tim@fourstonesExpressions.com>"
 
 import SmarterHTTPServer
 import BaseHTTPServer
-from Options import options
+from spambayes.Options import options
 import re
 from cStringIO import StringIO
 import os

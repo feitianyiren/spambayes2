@@ -4,9 +4,10 @@ with an empty database."""
 
 from __future__ import division
 
-import sys, mboxutils
-from FileCorpus import FileCorpus, FileMessageFactory, GzipFileMessageFactory
-from Options import options
+import sys
+from spambayes import  mboxutils
+from spambayes.FileCorpus import FileCorpus, FileMessageFactory, GzipFileMessageFactory
+from spambayes.Options import options
 
 def main():
    # Create the corpuses and the factory that reads the messages.

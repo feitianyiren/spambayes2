@@ -140,11 +140,12 @@ highest-scoring tokens and excluding the lowest-scoring ones.
 
 import os, sys, re, operator, errno, getopt, string, cStringIO, time, bisect
 import socket, asyncore, asynchat, cgi, urlparse, webbrowser
-import mailbox, storage, tokenizer, mboxutils, email.Header
-from FileCorpus import FileCorpus, ExpiryFileCorpus
-from FileCorpus import FileMessageFactory, GzipFileMessageFactory
+import mailbox, email.Header
+from spambayes import storage, tokenizer, mboxutils
+from spambayes.FileCorpus import FileCorpus, ExpiryFileCorpus
+from spambayes.FileCorpus import FileMessageFactory, GzipFileMessageFactory
 from email.Iterators import typed_subpart_iterator
-from Options import options
+from spambayes.Options import options
 
 # HEADER_EXAMPLE is the longest possible header - the length of this one
 # is added to the size of each message.
