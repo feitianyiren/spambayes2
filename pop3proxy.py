@@ -1098,16 +1098,13 @@ class UserInterface(BrighterAsyncChat):
         word = params['word']
         word = word.lower()
         try:
-            # Must be a better way to get __dict__ for a new-style class...
             wi = state.bayes.wordinfo[word]
-            members = dict(map(lambda n: (n, getattr(wi, n)), wi.__slots__))
-            members['atime'] = time.asctime(time.localtime(members['atime']))
+            members = wi.__dict__
+            members['spamprob'] = state.bayes.probability(wi)
             info = """Number of spam messages: <b>%(spamcount)d</b>.<br>
                    Number of ham messages: <b>%(hamcount)d</b>.<br>
-                   Number of times used to classify: <b>%(killcount)s</b>.<br>
                    Probability that a message containing this word is spam:
-                   <b>%(spamprob)f</b>.<br>
-                   Last used: <b>%(atime)s</b>.<br>""" % members
+                   <b>%(spamprob)f</b>.<br>""" % members
         except KeyError:
             info = "%r does not appear in the database." % word
 
