@@ -24,7 +24,7 @@ excited by the bleeding edge - these are detailed on the
 <p>There are currently two mailing lists of interest:</p>
 <ul>
 <li>
-The discussion list <a href="http://mail.python.org/mailman-21/listinfo/spambayes">spambayes</a>
+The discussion list <a href="http://mail.python.org/mailman-21/listinfo/spambayes">spambayes</a> (there's a search interface on the <a href="docs.html">documentation</a> page.)
 <li>
 CVS commit messages go to the list <a href="http://mail.python.org/mailman-21/listinfo/spambayes-checkins">spambayes-checkins</a>.
 </ul>
