@@ -1155,12 +1155,12 @@ class State:
             self.useDB = True
             options.pop3proxy_persistent_storage_file = \
                         '_pop3proxy_test.pickle'   # This is never saved.
+        filename = options.pop3proxy_persistent_storage_file
+        filename = os.path.expanduser(filename)
         if self.useDB:
-            self.bayes = storage.DBDictClassifier( \
-                                options.pop3proxy_persistent_storage_file)
+            self.bayes = storage.DBDictClassifier(filename)
         else:
-            self.bayes = storage.PickledClassifier(\
-                                options.pop3proxy_persistent_storage_file)
+            self.bayes = storage.PickledClassifier(filename)
         print "Done."
 
         # Don't set up the caches and training objects when running the self-test,
