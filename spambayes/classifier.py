@@ -384,9 +384,9 @@ class Classifier:
     def _add_msg(self, wordstream, is_spam):
         self.probcache = {}    # nuke the prob cache
         if is_spam:
-            self.nspam += 1
+            self.nspam = int(self.nspam) + 1  # account for string nspam
         else:
-            self.nham += 1
+            self.nham = int(self.nham) + 1   # account for string nham
 
         for word in Set(wordstream):
             record = self._wordinfoget(word)
