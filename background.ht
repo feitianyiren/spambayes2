@@ -29,27 +29,61 @@ and the comments in the Tokenizer section of Options.py contain more
 information about various approaches to tokenizing.</p>
 
 <h3>Combining and Scoring</h3>
+
 <p>The next part of the system is the scoring and combining part. This
 is where the hairy mathematics and statistics come in. </p>
-<p>Initially we started with Paul Graham's original combining scheme - 
+<p>Initially we started with Paul Graham's original combining scheme -
+a "Naive Bayes" scheme, of sorts  - 
 this has a number of "magic numbers" and "fuzz factors" built into it. 
 The Graham combining scheme has a number of problems, aside from the
 magic in the internal fudge factors - it tends to produce scores of 
 either 1 or 0, and there's a very small middle ground in between - it 
 doesn't often claim to be "unsure", and gets it wrong because of this. 
+The following plot shows the problem: </p>
+<p class="note"><b>Note:</b>In each of these plots, the X 
+axis shows the 'score' of the message, scaled to 0-100. 
+(where 0 is "definately ham", and 100 is "definately spam"), and
+the Y axis shows the number of messages with that score (scaled 
+logarithmically). Note also that the plots aren't from the same data
+set :-( but are "typical" plots that you'd see from a given technique.
+One day, if I have enough time, I'll go back and re-do all the plots
+using a single fixed data set.</p> 
+<p><img src="images/graham_graph.png"/></p>
+<p>In this plot, you can see that most of the spam gets scores near to
+1, while most of the ham gets scores near to zero. This is all good. 
+Unfortunately, there's also a significant number of hams that score
+close to 1, and spams close to 0 - which means the system is not just scoring
+them wrong, but it's completely confident in it's (wrong) score.
+</p>
+<p class="todo">Add more here - cancellation disease, fudge factors, &c</p>
+
+<p>Gary Robinson's 
+<a href="http://radio.weblogs.com/0101454/stories/2002/09/16/spamDetection.html">essay</a> turned up around this time, and Gary turned up on the mailing
+list a short time after that.</p>
+<P>Gary's initial technique produced scoring like this plot:</P>
+<IMG src="images/robinson_graph.png"/> 
+<P>This produces a <i>very</i> different result - but this plot shows
+a different issue - there's a large overlap between the ham scores and
+spam scores. Choosing the best 'cutoff' value for "everything higher than this
+is spam" turned out to be an incredibly delicate operation, and was 
+highly dependent on the user's data.</P>
+<p>
 There's a number of discussions back and forth between Tim Peters and 
 Gary Robinson on this subject in the mailing list archives - I'll try 
 and put links to the relevant threads at some point.</p>
 <p>Gary produced a number of alternative approaches to combining and
 scoring word probabilities. The initial one, after much back and forth
-in the mailing list, is in the code today as 'gary_combining'. A couple
-of other approaches, using the Central Limit Theorem, were also tried.
+in the mailing list, is in the code today as 'gary_combining', and is
+the second plot, above.. A couple
+of other approaches, using the <a href="http://www.statisticalengineering.com/central_limit_theorem.htm">Central Limit Theorem</a> (or <a href="http://mathworld.wolfram.com/CentralLimitTheorem.html">this, for the serious math geeks</a>), were also tried.</p>
+<p class="todo">todo: do some plots for these</p>
+<P>
 They produced interesting output - but histograms of the ham and spam
-distributions had a disturbingly large overlap in the middle. There was
+distributions still had a disturbingly large overlap in the middle. There was
 also an issue with incremental training and untraining of messages that
 made it harder to use in the "real world". These two central limit 
 approaches were dropped after Tim, Gary and Rob Hooft produced a combining
-scheme using chi-squared probabilities. This is now the default combining
+scheme using <a href="http://mathworld.wolfram.com/Chi-SquaredDistribution.html">chi-squared probabilities</a>. This is now the default combining
 scheme. </p>
 <p>The chi-squared approach produces two numbers - a "ham probability" ("*H*")
 and a "spam probability" ("*S*"). A typical spam will have a high *S*
@@ -60,12 +94,16 @@ know what this message is".
 Some messages can even have both a high *H* and a high *S*, telling you 
 basically that the message looks very much like ham, but also very much 
 like spam. In this case spambayes is also unsure where the message 
-should be classified, and the final score will be near 0.5.</p>
+should be classified, and the final score will be near 0.5. The following plot 
+shows this quite clearly. It also shows the quite dramatic results we get 
+from this technique.</p>
+<img src="images/chi2_graph.png"/>
 
 <p>So at the end of the processing, you end up 
 with three possible results - "Spam", "Ham", or "Unsure". It's possible to
 tweak the high and low cutoffs for the Unsure window - this trades off 
-unsure messages vs possible false positives or negatives.</P>
+unsure messages vs possible false positives or negatives. In the chi-squared
+results, the "unsure" window can be quite large, and still result in very small numbers of "unsure" messages. </P>
 
 <h3>Training</h3>
 <p>TBD</p>

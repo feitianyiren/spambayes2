@@ -12,6 +12,8 @@ A:visited 		{ color: 	#303030; }
 A:active  		{ color: 	#ff9933; }
 
 P:footer  		{ font-size:	x-small; }
+P.todo  { font-style: italic ; }
+P.note  { font-style: italic ; margin-left: 5%; margin-right: 5%; }
 
 TABLE:navigation	{ width:	100%;
 			  border:	0;	 }
