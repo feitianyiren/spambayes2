@@ -37,7 +37,6 @@ setup(
            'hammiesrv.py',
            'hammiefilter.py',
            'pop3proxy.py',
-           'proxytrainer.py',
            'proxytee.py',
           ],
         packages = [
