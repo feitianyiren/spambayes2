@@ -16,8 +16,8 @@ header.  Usage:
             -t      : Runs a fake POP3 server on port 8110 (for testing).
             -h      : Displays this help message.
 
-            -p FILE : use the named database file
-            -d      : the database is a DBM file rather than a pickle
+            -d FILE : use the named DBM database file
+            -D FILE : the the named Pickle database file
             -l port : proxy listens on this port number (default 110)
             -u port : User interface listens on this port number
                       (default 8880; Browse http://localhost:8880/)
@@ -1500,7 +1500,7 @@ def test():
 def run():
     # Read the arguments.
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'htdbzp:l:u:')
+        opts, args = getopt.getopt(sys.argv[1:], 'htbzpd:D:l:u:')
     except getopt.error, msg:
         print >>sys.stderr, str(msg) + '\n\n' + __doc__
         sys.exit()
@@ -1515,10 +1515,16 @@ def run():
             state.runTestServer = True
         elif opt == '-b':
             state.launchUI = True
-        elif opt == '-d':
+        elif opt == '-d':   // dbm file
             state.useDB = True
-        elif opt == '-p':
             options.pop3proxy_persistent_storage_file = arg
+        elif opt == '-D':   // pickle file
+            state.useDB = False
+            options.pop3proxy_persistent_storage_file = arg
+        elif opt == '-p':   // dead option
+            print >>sys.stderr, "-p option is no longer supported, use -D\n"
+            print >>sys.stderr, __doc__
+            sys.exit()
         elif opt == '-l':
             state.proxyPorts = [_addressAndPort(arg)]
         elif opt == '-u':
