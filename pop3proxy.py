@@ -13,19 +13,19 @@ header.  Usage:
 
         options:
             -z      : Runs a self-test and exits.
-            -t      : Runs a test POP3 server on port 8110 (for testing).
+            -t      : Runs a fake POP3 server on port 8110 (for testing).
             -h      : Displays this help message.
 
-            -p FILE : use the named data file
-            -d      : the file is a DBM file rather than a pickle
+            -p FILE : use the named database file
+            -d      : the database is a DBM file rather than a pickle
             -l port : proxy listens on this port number (default 110)
             -u port : User interface listens on this port number
                       (default 8880; Browse http://localhost:8880/)
             -b      : Launch a web browser showing the user interface.
 
         All command line arguments and switches take their default
-        values from the [Hammie], [pop3proxy] and [html_ui] sections
-        of bayescustomize.ini.
+        values from the [pop3proxy] and [html_ui] sections of
+        bayescustomize.ini.
 
 For safety, and to help debugging, the whole POP3 conversation is
 written out to _pop3proxy.log for each run.
@@ -39,7 +39,7 @@ to _pop3proxyham.mbox and _pop3proxyspam.mbox.
 # Foundation license.
 
 __author__ = "Richie Hindle <richie@entrian.com>"
-__credits__ = "Tim Peters, Neale Pickett, all the spambayes contributors."
+__credits__ = "Tim Peters, Neale Pickett, Tim Stone, all the Spambayes folk."
 
 try:
     True, False
@@ -55,6 +55,8 @@ Web training interface:
  o Functional tests.
  o Review already-trained messages, and purge them.
  o Put in a link to view a message (plain text, html, multipart...?)
+   Include a Reply link that launches the registered email client, eg.
+   mailto:tim@fourstonesExpressions.com?subject=Re:%20pop3proxy&body=Hi%21%0D
  o Keyboard navigation (David Ascher).  But aren't Tab and left/right
    arrow enough?
  o [Francois Granger] Show the raw spambrob number close to the buttons
@@ -129,6 +131,10 @@ POP3 command in a conversion is STAT or LIST, which tells you how many
 mails there are - it wouldn't know the answer, and finding out could
 take weeks over a modem - I've already had problems with clients timing
 out while the proxy was downloading stuff from the server).
+
+Adam's idea: add checkboxes to a Google results list for "Relevant" /
+"Irrelevant", then submit that to build a search including the
+highest-scoring tokens and excluding the lowest-scoring ones.
 """
 
 import os, sys, re, operator, errno, getopt, string, cStringIO, time, bisect
@@ -213,10 +219,11 @@ class ServerLineReader(BrighterAsyncChat):
         try:
             self.connect((serverName, serverPort))
         except socket.error, e:
-            print >>sys.stderr, "Can't connect to %s:%d: %s" % \
-                                (serverName, serverPort, e)
-            self.close()
+            error = "Can't connect to %s:%d: %s" % (serverName, serverPort, e)
+            print >>sys.stderr, error
+            self.lineCallback('-ERR %s\r\n' % error)
             self.lineCallback('')   # "The socket's been closed."
+            self.close()
 
     def collect_incoming_data(self, data):
         self.request = self.request + data
@@ -303,7 +310,7 @@ class POP3ProxyBase(BrighterAsyncChat):
         elif self.command in ['RETR', 'TOP']:
             return True
         elif self.command in ['LIST', 'UIDL']:
-            return len(args) == 0
+            return len(self.args) == 0
         else:
             # Assume that an unknown command will get a single-line
             # response.  This should work for errors and for POP-AUTH,
@@ -709,7 +716,7 @@ class UserInterface(BrighterAsyncChat):
     reviewSubheader = \
         """<tr><td><b>Messages classified as %s:</b></td>
           <td><b>From:</b></td>
-          <td class='reviewheaders'><b>
+          <td class='reviewheaders' nowrap><b>
               <a href='javascript: onHeader("%s", "Discard");'>Discard</a> /
               <a href='javascript: onHeader("%s", "Defer");'>Defer</a> /
               <a href='javascript: onHeader("%s", "Ham");'>Ham</a> /
