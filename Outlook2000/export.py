@@ -3,37 +3,36 @@
 import sys, os, shutil
 from manager import GetManager
 
+files_per_directory = 400
 
-def BuildBuckets(manager, root_directory, folder_ids, include_sub):
+def BuildBuckets(manager):
     store = manager.message_store
     config = manager.config
-    num = 0
+    num_ham = num_spam = 0
     for folder in store.GetFolderGenerator(config.training.spam_folder_ids, config.training.spam_include_sub):
         for msg in folder.GetMessageGenerator():
-            num += 1
-    num_buckets = num / 400
+            num_spam += 1
+    for folder in store.GetFolderGenerator(config.training.ham_folder_ids, config.training.ham_include_sub):
+        for msg in folder.GetMessageGenerator():
+            num_ham += 1
+    num_buckets = min(num_ham, num_spam)/ files_per_directory
     dirs = []
     for i in range(num_buckets):
-        dir=os.path.join(root_directory, "Set%d" % (i+1,))
-        dir=os.path.abspath(dir)
-        if os.path.isdir(dir):
-            shutil.rmtree(dir)
-        os.makedirs(dir)
-        dirs.append(dir)
-    return dirs
+        dirs.append("Set%d" % (i+1,))
+    return num_spam, num_ham, dirs
 
 def ChooseBucket(buckets):
     import random
     return random.choice(buckets)
 
-def _export_folders(manager, dir, folder_ids, include_sub):
+def _export_folders(manager, dir, buckets, folder_ids, include_sub):
     num = 0
     store = manager.message_store
-    buckets = BuildBuckets(manager, dir, folder_ids, include_sub)
     for folder in store.GetFolderGenerator(folder_ids, include_sub):
         print "", folder.name
         for message in folder.GetMessageGenerator():
-            dir = ChooseBucket(buckets)
+            sub = ChooseBucket(buckets)
+            this_dir = os.path.join(dir, sub)
             # filename is the EID.txt
             try:
                 msg_text = str(message.GetEmailPackageObject())
@@ -44,7 +43,7 @@ def _export_folders(manager, dir, folder_ids, include_sub):
                       % (message.GetSubject(), sys.exc_info()[1])
                 continue
 
-            fname = os.path.join(dir, message.GetID()[1]) + ".txt"
+            fname = os.path.join(this_dir, message.GetID()[1]) + ".txt"
             f = open(fname, "w")
             f.write(msg_text)
             f.close()
@@ -56,20 +55,31 @@ def export(directory):
     manager = GetManager()
     config = manager.config
 
-    print "Exporting spam..."
-    num = _export_folders(manager, os.path.join(directory, "Spam"),
-                          config.training.spam_folder_ids, config.training.spam_include_sub)
-    print "Exported", num, " spam messages."
+    num_spam, num_ham, buckets = BuildBuckets(manager)
+    print "Have %d spam, and %d ham to export, spread over %d directories." \
+          % (num_spam, num_ham, len(buckets))
 
-    print "Exporting ham...",
-    num = _export_folders(manager, os.path.join(directory, "Ham"),
+    for sub in ["Spam", "Ham"]:
+        if os.path.exists(os.path.join(directory, sub)):
+            shutil.rmtree(os.path.join(directory, sub))
+        for b in buckets:
+            d = os.path.join(directory, sub, b)
+            os.makedirs(d)
+
+    print "Exporting spam..."
+    num = _export_folders(manager, os.path.join(directory, "Spam"), buckets,
+                          config.training.spam_folder_ids, config.training.spam_include_sub)
+    print "Exported", num, "spam messages."
+
+    print "Exporting ham..."
+    num = _export_folders(manager, os.path.join(directory, "Ham"), buckets,
                           config.training.ham_folder_ids, config.training.ham_include_sub)
-    print "Exported", num, " ham messages."
+    print "Exported", num, "ham messages."
 
 def main():
     import getopt
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "q")
+        opts, args = getopt.getopt(sys.argv[1:], "qn:")
     except getopt.error, d:
         print d
         print
@@ -78,6 +88,9 @@ def main():
     for opt, val in opts:
         if opt=='-q':
             quiet = 1
+        elif opt=='-n':
+            global files_per_directory
+            files_per_directory = int(val)
 
     if len(args) > 1:
         print "Only one directory name can be specified"
@@ -105,6 +118,7 @@ def usage():
 Usage: %s -q [directory]
 
 -q : quiet - don't prompt for confirmation.
+-n : Minimum number of files to aim for in each directory, default=%d
 
 Export the folders defined in the Outlook Plugin to a test directory.
 The directory structure is as defined in the parent README.txt file,
@@ -114,7 +128,7 @@ If 'directory' is not specified, '..\\Data' is assumed.
 
 If 'directory' exists, it will be recursively deleted before
 the export (but you will be asked to confirm unless -q is given).""" \
-            % (os.path.basename(sys.argv[0]))
+            % (os.path.basename(sys.argv[0]), files_per_directory)
     sys.exit(1)
 
 if __name__=='__main__':
