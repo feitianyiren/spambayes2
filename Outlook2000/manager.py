@@ -281,6 +281,32 @@ class BayesManager:
         else:
             return score
 
+    def ShowManager(self):
+        def do_train(dlg):
+            import train
+            import dialogs.TrainingDialog
+            d = dialogs.TrainingDialog.TrainingDialog(dlg.mgr, train.trainer)
+            d.DoModal()
+
+        def do_filter(dlg):
+            import filter
+            import dialogs.FilterDialog
+            d = dialogs.FilterDialog.FilterNowDialog(dlg.mgr, filter.filterer)
+            d.DoModal()
+
+        def define_filter(dlg):
+            import filter
+            import dialogs.FilterDialog
+            d = dialogs.FilterDialog.FilterArrivalsDialog(dlg.mgr, filter.filterer)
+            d.DoModal()
+            if dlg.mgr.addin is not None:
+                dlg.mgr.addin.FiltersChanged()
+
+
+        import dialogs.ManagerDialog
+        d = dialogs.ManagerDialog.ManagerDialog(self, do_train, do_filter, define_filter)
+        d.DoModal()
+
 _mgr = None
 
 def GetManager(outlook = None, verbose=1):
@@ -295,30 +321,7 @@ def GetManager(outlook = None, verbose=1):
     return _mgr
 
 def ShowManager(mgr):
-    def do_train(dlg):
-        import train
-        import dialogs.TrainingDialog
-        d = dialogs.TrainingDialog.TrainingDialog(dlg.mgr, train.trainer)
-        d.DoModal()
-
-    def do_filter(dlg):
-        import filter
-        import dialogs.FilterDialog
-        d = dialogs.FilterDialog.FilterNowDialog(dlg.mgr, filter.filterer)
-        d.DoModal()
-
-    def define_filter(dlg):
-        import filter
-        import dialogs.FilterDialog
-        d = dialogs.FilterDialog.FilterArrivalsDialog(dlg.mgr, filter.filterer)
-        d.DoModal()
-        if dlg.mgr.addin is not None:
-            dlg.mgr.addin.FiltersChanged()
-
-
-    import dialogs.ManagerDialog
-    d = dialogs.ManagerDialog.ManagerDialog(mgr, do_train, do_filter, define_filter)
-    d.DoModal()
+    mgr.ShowManager()
 
 def main(verbose_level = 1):
     try:
