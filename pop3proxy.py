@@ -1371,7 +1371,7 @@ def test():
         httpServer = UserInterfaceServer(8881)
         proxyUI = UserInterface()
         httpServer.register(proxyUI, OptionsConfigurator(proxyUI))
-        BayesProxyListener('localhost', 8110, 8111)
+        BayesProxyListener('localhost', 8110, ('', 8111))
         state.bayes.learn(tokenizer.tokenize(spam1), True)
         state.bayes.learn(tokenizer.tokenize(good1), False)
         proxyReady.set()
