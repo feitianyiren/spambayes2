@@ -260,7 +260,7 @@ class POP3ProxyBase(Dibbler.BrighterAsyncChat):
         if self.command in ['USER', 'PASS', 'APOP', 'QUIT',
                             'STAT', 'DELE', 'NOOP', 'RSET', 'KILL']:
             return False
-        elif self.command in ['RETR', 'TOP']:
+        elif self.command in ['RETR', 'TOP', 'CAPA']:
             return True
         elif self.command in ['LIST', 'UIDL']:
             return len(self.args) == 0
@@ -315,6 +315,12 @@ class POP3ProxyBase(Dibbler.BrighterAsyncChat):
         self.request = ''
 
     def onResponse(self):
+        # We don't support pipelining, so if the command is CAPA and the
+        # response includes PIPELINING, hack out that line of the response.
+        if self.command == 'CAPA':
+            pipelineRE = r'(?im)^PIPELINING[^\n]*\n'
+            self.response = re.sub(pipelineRE, '', self.response)
+
         # Pass the request and the raw response to the subclass and
         # send back the cooked response.
         if self.response:
@@ -1295,7 +1301,8 @@ class TestPOP3Server(Dibbler.BrighterAsyncChat):
         self.set_terminator('\r\n')
         self.okCommands = ['USER', 'PASS', 'APOP', 'NOOP',
                            'DELE', 'RSET', 'QUIT', 'KILL']
-        self.handlers = {'STAT': self.onStat,
+        self.handlers = {'CAPA': self.onCapa,
+                         'STAT': self.onStat,
                          'LIST': self.onList,
                          'RETR': self.onRetr,
                          'TOP': self.onTop}
@@ -1331,6 +1338,18 @@ class TestPOP3Server(Dibbler.BrighterAsyncChat):
         for c in response:
             self.push(c)
             time.sleep(0.02)
+
+    def onCapa(self, command, args):
+        """POP3 CAPA command.  This lies about supporting pipelining for
+        test purposes - the POP3 proxy *doesn't* support pipelining, and
+        we test that it correctly filters out that capability from the
+        proxied capability list."""
+        lines = ["+OK Capability list follows",
+                 "PIPELINING",
+                 "TOP",
+                 ".",
+                 ""]
+        return '\r\n'.join(lines)
 
     def onStat(self, command, args):
         """POP3 STAT command."""
@@ -1420,11 +1439,26 @@ def test():
     threading.Thread(target=runUIAndProxy).start()
     proxyReady.wait()
 
-    # Connect to the proxy.
+    # Connect to the proxy and the test server.
     proxy = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     proxy.connect(('localhost', 8111))
     response = proxy.recv(100)
     assert response == "+OK ready\r\n"
+    pop3Server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    pop3Server.connect(('localhost', 8110))
+    response = pop3Server.recv(100)
+    assert response == "+OK ready\r\n"
+
+    # Verify that the test server claims to support pipelining.
+    pop3Server.send("capa\r\n")
+    response = pop3Server.recv(1000)
+    assert response.find("PIPELINING") >= 0
+
+    # Ask for the capabilities via the proxy, and verify that the proxy
+    # is filtering out the PIPELINING capability.
+    proxy.send("capa\r\n")
+    response = proxy.recv(1000)
+    assert response.find("PIPELINING") == -1
 
     # Stat the mailbox to get the number of messages.
     proxy.send("stat\r\n")
@@ -1455,8 +1489,6 @@ def test():
     # Kill the proxy and the test server.
     proxy.sendall("kill\r\n")
     proxy.recv(100)
-    pop3Server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    pop3Server.connect(('localhost', 8110))
     pop3Server.sendall("kill\r\n")
     pop3Server.recv(100)
 
