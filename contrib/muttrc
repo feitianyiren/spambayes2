@@ -10,7 +10,7 @@
 ##
 ##
 ## This binds 'S' to refile as spam and move to a 'caughtspam' folder.
-## 'H' will refile as spam and move to your inbox.  You will want to use
+## 'H' will refile as ham and move to your inbox.  You will want to use
 ## these on every misclassified message.
 ##
 ## As a special bonus, all tagged spam will be colored red on black.
