@@ -22,8 +22,6 @@ Where:
         This is required.
     -d decider 
         Name of the decider. One of %(decisionkeys)s
-    -u updater
-        Name of the updater. One of %(updaterkeys)s
     -m min
         Minimal number of messages to train on before involving the decider.
 
@@ -53,6 +51,10 @@ def usage(code, msg=''):
     print >> sys.stderr, __doc__ % globals()
     sys.exit(code)
 
+DONT_TRAIN = None
+TRAIN_AS_HAM = 1
+TRAIN_AS_SPAM = 2
+
 class TrainDecision:
     def __call__(self,scr,is_spam):
         if is_spam:
@@ -62,34 +64,57 @@ class TrainDecision:
 
 class UnsureAndFalses(TrainDecision):
     def spamtrain(self,scr):
-        return scr < options.spam_cutoff
+        if scr < options.spam_cutoff:
+	    return TRAIN_AS_SPAM
 
     def hamtrain(self,scr):
-        return scr > options.ham_cutoff
+        if scr > options.ham_cutoff:
+	    return TRAIN_AS_HAM
 
 class UnsureOnly(TrainDecision):
     def spamtrain(self,scr):
-        return options.ham_cutoff < scr < options.spam_cutoff
+        if options.ham_cutoff < scr < options.spam_cutoff:
+	    return TRAIN_AS_SPAM
 
-    hamtrain = spamtrain
+    def hamtrain(self,scr):
+        if options.ham_cutoff < scr < options.spam_cutoff:
+	    return TRAIN_AS_HAM
 
 class All(TrainDecision):
     def spamtrain(self,scr):
-        return 1
+        return TRAIN_AS_SPAM
 
-    hamtrain = spamtrain
+    def hamtrain(self,scr):
+        return TRAIN_AS_HAM
 
 class AllBut0and100(TrainDecision):
     def spamtrain(self,scr):
-        return scr < 0.995
+        if scr < 0.995:
+	    return TRAIN_AS_SPAM
 
     def hamtrain(self,scr):
-        return scr > 0.005
+        if scr > 0.005:
+            return TRAIN_AS_HAM
+
+class OwnDecision(TrainDecision):
+    def hamtrain(self,scr):
+        if scr < options.ham_cutoff:
+	    return TRAIN_AS_HAM
+        elif scr > options.spam_cutoff:
+	    return TRAIN_AS_SPAM
+
+    spamtrain = hamtrain
+
+class OwnDecisionFNCorrection(OwnDecision):
+    def spamtrain(self,scr):
+        return TRAIN_AS_SPAM
 
 decisions={'all': All,
            'allbut0and100': AllBut0and100,
            'unsureonly': UnsureOnly,
            'unsureandfalses': UnsureAndFalses,
+           'owndecision': OwnDecision,
+           'owndecision+fn': OwnDecisionFNCorrection,
           }
 decisionkeys=decisions.keys()
 decisionkeys.sort()
@@ -103,7 +128,10 @@ class FirstN:
     def __call__(self,scr,is_spam):
         self.x += 1
         if self.tooearly():
-            return True
+            if is_spam:
+		return TRAIN_AS_SPAM
+            else:
+		return TRAIN_AS_HAM
         else:
             return self.client(scr,is_spam)
     
@@ -117,28 +145,7 @@ class Updater:
     def setd(self,d):
         self.d=d
 
-class AlwaysUpdate(Updater):
-    def __call__(self):
-        self.d.update_probabilities()
-
-class SometimesUpdate(Updater):
-    def __init__(self,d=None,factor=10):
-        Updater.__init__(self,d)
-        self.factor=factor
-        self.n = 0
-
-    def __call__(self):
-        self.n += 1
-        if self.n % self.factor == 0:
-            self.d.update_probabilities()
-
-updaters={'always':AlwaysUpdate,
-          'sometimes':SometimesUpdate,
-         }
-updaterkeys=updaters.keys()
-updaterkeys.sort()
-
-def drive(nsets,decision,updater):
+def drive(nsets,decision):
     print options.display()
 
     spamdirs = [options.spam_directories % i for i in range(1, nsets+1)]
@@ -155,8 +162,7 @@ def drive(nsets,decision,updater):
     for fn in spamfns+hamfns:
         allfns[fn] = None
 
-    d = hammie.Hammie(hammie.createbayes('weaktest.db', False))
-    updater.setd(d)
+    d = hammie.open('weaktest.db', False)
 
     hamtrain = 0
     spamtrain = 0
@@ -178,14 +184,13 @@ def drive(nsets,decision,updater):
                 if debug > 0:
                     print "Ham with score %.2f"%scr
                 cc.ham(scr)
-        if decision(scr,is_spam):
-            if is_spam:
-                d.train_spam(m)
-                spamtrain += 1
-            else:
-                d.train_ham(m)
-                hamtrain += 1
-            updater()
+        de = decision(scr,is_spam) 
+        if de == TRAIN_AS_SPAM: 
+            d.train_spam(m)
+            spamtrain += 1
+        elif de == TRAIN_AS_HAM:
+            d.train_ham(m)
+            hamtrain += 1
         if n % 100 == 0:
             print "%5d trained:%dH+%dS wrds:%d"%(
                 n, hamtrain, spamtrain, len(d.bayes.wordinfo))
@@ -201,13 +206,12 @@ def main():
     import getopt
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'vd:u:hn:m:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vd:hn:m:')
     except getopt.error, msg:
         usage(1, msg)
 
     nsets = None
     decision = decisions['unsureonly']
-    updater = updaters['always']
     m = 10
 
     for opt, arg in opts:
@@ -223,17 +227,13 @@ def main():
             if not decisions.has_key(arg):
                 usage(1,'Unknown decisionmaker')
             decision = decisions[arg]
-        elif opt == '-u':
-            if not updaters.has_key(arg):
-                usage(1,'Unknown updater')
-            updater = updaters[arg]
 
     if args:
         usage(1, "Positional arguments not supported")
     if nsets is None:
         usage(1, "-n is required")
 
-    drive(nsets,decision=FirstN(m,decision()),updater=updater())
+    drive(nsets,decision=FirstN(m,decision()))
 
 if __name__ == "__main__":
     main()
