@@ -503,7 +503,9 @@ d = StringIO.StringIO(defaults)
 options.mergefilelike(d)
 del d
 
-alternate = os.getenv('BAYESCUSTOMIZE')
+alternate = None
+if hasattr(os, 'getenv'):
+    alternate = os.getenv('BAYESCUSTOMIZE')
 if alternate:
     options.mergefiles(alternate.split())
 else:
