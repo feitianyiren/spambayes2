@@ -91,20 +91,19 @@ __author__ = "Tim Stone <tim@fourstonesExpressions.com>"
 
 from __future__ import generators
 
-import storage
+import spambayes.storage
 from spambayes.Options import options
 import sys, os, getopt, errno, re
 import urllib
 
 def runExport(dbFN, useDBM, outFN):
 
-    print "running export on %s" % (dbFN)
     if useDBM:
-        bayes = storage.DBDictClassifier(dbFN)
+        bayes = spambayes.storage.DBDictClassifier(dbFN)
         words = bayes.db.keys()
         words.remove(bayes.statekey)
     else:
-        bayes = storage.PickledClassifier(dbFN)
+        bayes = spambayes.storage.PickledClassifier(dbFN)
         words = bayes.wordinfo.keys()
 
     try:
@@ -115,7 +114,10 @@ def runExport(dbFN, useDBM, outFN):
        
     nham = bayes.nham;
     nspam = bayes.nspam;
-    print "nham %s, nspam %s" % (nham, nspam)
+    
+    print "Exporting database %s to file %s" % (dbFN, outFN)
+    print "Database has %s ham, %s spam, and %s words" \
+            % (nham, nspam, len(words))
     
     fp.write("%s,%s,\n" % (nham, nspam))
     
@@ -137,10 +139,22 @@ def runImport(dbFN, useDBM, newDBM, inFN):
             if e.errno != 2:     # errno.<WHAT>
                 raise
                 
+        try:
+            os.unlink(dbFN+".dat")
+        except OSError, e:
+            if e.errno != 2:     # errno.<WHAT>
+                raise
+                
+        try:
+            os.unlink(dbFN+".dir")
+        except OSError, e:
+            if e.errno != 2:     # errno.<WHAT>
+                raise
+                
     if useDBM:
-        bayes = storage.DBDictClassifier(dbFN)
+        bayes = spambayes.storage.DBDictClassifier(dbFN)
     else:
-        bayes = storage.PickledClassifier(dbFN)
+        bayes = spambayes.storage.PickledClassifier(dbFN)
 
     try:
         fp = open(inFN, 'r')
@@ -149,7 +163,6 @@ def runImport(dbFN, useDBM, newDBM, inFN):
            raise
     
     nline = fp.readline()
-    print nline
     (nham, nspam, junk) = re.split(',', nline)
  
     if newDBM:
@@ -159,6 +172,13 @@ def runImport(dbFN, useDBM, newDBM, inFN):
         bayes.nham += nham
         bayes.nspam += nspam
     
+    if newDBM:
+        impType = "Importing"
+    else:
+        impType = "Merging"
+  
+    print "%s database %s using file %s" % (impType, dbFN, inFN)
+
     lines = fp.readlines()
     
     for line in lines:
@@ -176,7 +196,22 @@ def runImport(dbFN, useDBM, newDBM, inFN):
         bayes._wordinfoset(word, wi)
 
     fp.close()
+
+    print "Storing database, please be patient.  Even moderately large"
+    print "databases may take a very long time to store."
     bayes.store()
+    print "Finished storing database"
+    
+    if useDBM:
+        words = bayes.db.keys()
+        words.remove(bayes.statekey)
+    else:
+        words = bayes.wordinfo.keys()
+        
+    print "Database has %s ham, %s spam, and %s words" \
+           % (bayes.nham, bayes.nspam, len(words))
+
+
 
 
 if __name__ == '__main__':
