@@ -16,6 +16,15 @@
 
 """Usage: %(program)s [OPTION]
 
+A hammie front-end to make the simple stuff simple.  The intent is to call
+this from procmail and its ilk like so:
+
+  :0 fw
+  | hammiefilter.py
+
+Then, you can set up your MUA to pipe ham and spam to it, one at a time, by
+calling it with either the -g or -s options, respectively.
+
 Where [OPTION] is one of:
     -h
         show usage and exit
@@ -103,9 +112,9 @@ class HammieFilter(object):
 def main():
     h = HammieFilter()
     action = h.filter
-    opts, args = getopt.getopt(sys.argv[1:], 'hngsGS')
+    opts, args = getopt.getopt(sys.argv[1:], 'hngsGS', ['help'])
     for opt, arg in opts:
-        if opt == '-h':
+        if opt in ('-h', '--help'):
             usage(0)
         elif opt == '-g':
             action = h.train_ham
