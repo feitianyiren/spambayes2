@@ -41,6 +41,7 @@ training database.
 document or corpus. (plural is hapax legomena)
 <dt>training<dd>The process of feeding spambayes some sample spam and ham messages, to teach it what to look for.
 <dt>Bayesian<dd>A form of statistical analysis used (in a form) in Paul Graham's
-initial "Plan for Spam" approach. Now used as a kind of catch-all term for this class of filters, no doubt horrorifying statisticians everywhere.
+initial "Plan for Spam" approach. Now used as a kind of catch-all term for 
+this class of filters, no doubt horrifying statisticians everywhere.
 </dl>
 
