@@ -556,4 +556,10 @@ if hasattr(os, 'getenv'):
 if alternate:
     options.mergefiles(alternate.split())
 else:
-    options.mergefiles(['bayescustomize.ini'])
+    alts = []
+    for path in ['bayescustomize.ini', '~/.spambayesrc']:
+        epath = os.path.expanduser(path)
+        if os.path.exists(epath):
+            alts.append(epath)
+    if alts:
+        options.mergefiles(alts)
