@@ -25,7 +25,10 @@ def filter_message(msg, mgr, all_actions=True):
         attr_prefix = None
 
     try:
+        # Save the score
         msg.SetField(mgr.config.field_score_name, prob)
+        # and the ID of the folder we were in when scored.
+        msg.RememberMessageCurrentFolder()
         msg.Save()
 
         if all_actions and attr_prefix is not None:

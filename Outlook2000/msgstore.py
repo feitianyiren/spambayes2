@@ -693,6 +693,53 @@ class MAPIMsgStoreMsg(MsgStoreMsg):
 
     def CopyTo(self, folder):
         self._DoCopyMove(folder, False)
+    def GetFolder(self):
+        # return a folder object with the parent, or None
+        folder = self.msgstore._OpenEntry(self.id)
+        prop_ids = PR_PARENT_ENTRYID,
+        hr, data = folder.GetProps(prop_ids,0)
+        # Put parent ids together
+        parent_eid = data[0][1]
+        parent_id = self.id[0], parent_eid
+        parent = self.msgstore._OpenEntry(parent_id)
+        # Finally get the display name.
+        hr, data = folder.GetProps((PR_DISPLAY_NAME_A,), 0)
+        name = data[0][1]
+        count = parent.GetContentsTable(0).GetRowCount(0)
+        return MAPIMsgStoreFolder(self.msgstore, parent_id, name, count)
+
+    def RememberMessageCurrentFolder(self):
+        self._EnsureObject()
+        folder = self.GetFolder()
+        props = ( (mapi.PS_PUBLIC_STRINGS, "SpamBayesOriginalFolderStoreID"),
+                  (mapi.PS_PUBLIC_STRINGS, "SpamBayesOriginalFolderID")
+                  )
+        resolve_ids = self.mapi_object.GetIDsFromNames(props, mapi.MAPI_CREATE)
+        prop_ids = PROP_TAG( PT_BINARY, PROP_ID(resolve_ids[0])), \
+                   PROP_TAG( PT_BINARY, PROP_ID(resolve_ids[1]))
+
+        prop_tuples = (prop_ids[0],folder.id[0]), (prop_ids[1],folder.id[1])
+        self.mapi_object.SetProps(prop_tuples)
+        self.dirty = True
+
+    def GetRememberedFolder(self):
+        props = ( (mapi.PS_PUBLIC_STRINGS, "SpamBayesOriginalFolderStoreID"),
+                  (mapi.PS_PUBLIC_STRINGS, "SpamBayesOriginalFolderID")
+                  )
+        try:
+            self._EnsureObject()
+            resolve_ids = self.mapi_object.GetIDsFromNames(props, mapi.MAPI_CREATE)
+            prop_ids = PROP_TAG( PT_BINARY, PROP_ID(resolve_ids[0])), \
+                       PROP_TAG( PT_BINARY, PROP_ID(resolve_ids[1]))
+            hr, data = self.mapi_object.GetProps(prop_ids,0)
+            if hr != 0:
+                return None
+            (store_tag, store_id), (eid_tag, eid) = data
+            folder_id = mapi.HexFromBin(store_id), mapi.HexFromBin(eid)
+            return self.msgstore.GetFolder(folder_id)
+        except:
+            print "Error locating origin of message", self
+            return None
 
 def test():
     from win32com.client import Dispatch

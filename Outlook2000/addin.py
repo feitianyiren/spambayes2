@@ -338,7 +338,6 @@ class ButtonRecoverFromSpamEvent(ButtonDeleteAsEventBase):
         msgstore_messages = self.explorer.GetSelectedMessages(True)
         if not msgstore_messages:
             return
-        # Recover to where they were moved from
         # Get the inbox as the default place to restore to
         # (incase we dont know (early code) or folder removed etc
         app = self.explorer.Application
@@ -346,16 +345,21 @@ class ButtonRecoverFromSpamEvent(ButtonDeleteAsEventBase):
                     app.Session.GetDefaultFolder(constants.olFolderInbox))
         import train
         for msgstore_message in msgstore_messages:
+            # Recover where they were moved from
+            restore_folder = msgstore_message.GetRememberedFolder()
+            if restore_folder is None:
+                restore_folder = inbox_folder
+
             # Must train before moving, else we lose the message!
             subject = msgstore_message.GetSubject()
-            print "Recovering and ham training message '%s' - " % (subject,),
+            print "Recovering to folder '%s' and ham training message '%s' - " % (restore_folder.name, subject),
             if train.train_message(msgstore_message, False, self.manager, rescore = True):
                 print "trained as ham"
             else:
                 print "already was trained as ham"
             # Now move it.
             # XXX - still don't write the source, so no point looking :(
-            msgstore_message.MoveTo(inbox_folder)
+            msgstore_message.MoveTo(restore_folder)
             # Note the move will possibly also trigger a re-train
             # but we are smart enough to know we have already done it.
 
