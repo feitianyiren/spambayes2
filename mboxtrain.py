@@ -139,9 +139,8 @@ def mbox_train(h, path, is_spam, force):
         if loud:
             sys.stdout.write("  %s\r" % counter)
             sys.stdout.flush()
-        if not msg_train(h, msg, is_spam, force):
-            continue
-        trained += 1
+        if msg_train(h, msg, is_spam, force):
+            trained += 1
         # Write it out with the Unix "From " line
         outf.write(msg.as_string(True))
 
