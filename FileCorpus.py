@@ -195,7 +195,9 @@ class FileMessage(Corpus.Message):
         Corpus.Message.__init__(self)
         self.file_name = file_name
         self.directory = directory
-        self.load()
+
+        # No calling of self.load() here - that's done on demand by
+        # Message.__getattr__.
 
     def pathname(self):
         '''Derive the pathname of the message file'''

@@ -255,8 +255,18 @@ class Message:
     def __init__(self):
         '''Constructor()'''
 
-        self.payload = None
-        self.hdrtxt = None
+        # The text of the message headers and body are held in attributes
+        # called 'hdrtxt' and 'payload', created on demand in __getattr__
+        # by calling load(), which should in turn call setSubstance().
+        # This means you don't need to remember to call load() before
+        # using these attributes.
+
+    def __getattr__(self, attributeName):
+        '''On-demand loading of the message text.'''
+
+        if attributeName in ('hdrtxt', 'payload'):
+            self.load()
+        return getattr(self, attributeName)
 
     def load(self):
         '''Method to load headers and body'''
