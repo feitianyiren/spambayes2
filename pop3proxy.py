@@ -978,7 +978,7 @@ class UserInterface(Dibbler.HTTPPlugin):
         cluesRow = cluesTable.cluesRow.clone()
         del cluesTable.cluesRow   # Delete dummy row to make way for real ones
         for word, wordProb in clues:
-            cluesTable += cluesRow % (word, wordProb)
+            cluesTable += cluesRow % (cgi.escape(word), wordProb)
 
         results = self.html.classifyResults.clone()
         results.probability = probability
@@ -997,11 +997,11 @@ class UserInterface(Dibbler.HTTPPlugin):
             stats.hamcount = wordinfo.hamcount
             stats.spamprob = state.bayes.probability(wordinfo)
         else:
-            stats = "%r does not exist in the database." % word
+            stats = "%r does not exist in the database." % cgi.escape(word)
 
         query = self.html.wordQuery.clone()
         query.word.value = word
-        statsBox = self._buildBox("Statistics for %r" % word,
+        statsBox = self._buildBox("Statistics for %r" % cgi.escape(word),
                                   'status.gif', stats)
         queryBox = self._buildBox("Word query", 'query.gif', query)
         self._writePreamble("Word query")
