@@ -1515,13 +1515,13 @@ def run():
             state.runTestServer = True
         elif opt == '-b':
             state.launchUI = True
-        elif opt == '-d':   // dbm file
+        elif opt == '-d':   # dbm file
             state.useDB = True
             options.pop3proxy_persistent_storage_file = arg
-        elif opt == '-D':   // pickle file
+        elif opt == '-D':   # pickle file
             state.useDB = False
             options.pop3proxy_persistent_storage_file = arg
-        elif opt == '-p':   // dead option
+        elif opt == '-p':   # dead option
             print >>sys.stderr, "-p option is no longer supported, use -D\n"
             print >>sys.stderr, __doc__
             sys.exit()
