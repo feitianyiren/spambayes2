@@ -155,7 +155,9 @@ class DBDictClassifier(classifier.Classifier):
         if options.verbose:
             print 'Persisting',self.db_name,'state in database'
 
-        for key, val in self.wordinfo.iteritems():
+        # Must use .keys() since we modify the dict in the loop
+        for key in self.wordinfo.keys():
+            val = self.wordinfo[key]
             if val == None:
                 del self.wordinfo[key]
                 try:
