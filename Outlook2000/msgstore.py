@@ -513,12 +513,14 @@ class MAPIMsgStoreMsg(MsgStoreMsg):
         if self.mapi_object is None:
             self.mapi_object = self.msgstore._OpenEntry(self.id)
 
-    def GetEmailPackageObject(self, strip_content_type=True):
+    def GetEmailPackageObject(self, strip_mime_headers=True):
         # Return an email.Message object.
-        # strip_content_type is a hack, and should be left True unless you're
+        #
+        # strip_mime_headers is a hack, and should be left True unless you're
         # trying to display all the headers for diagnostic purposes.  If we
         # figure out something better to do, it should go away entirely.
-        # The problem:  suppose a msg is multipart/alternative, with
+        #
+        # Problem #1:  suppose a msg is multipart/alternative, with
         # text/plain and text/html sections.  The latter MIME decorations
         # are plain missing in what _GetMessageText() returns.  If we leave
         # the multipart/alternative in the headers anyway, the email
@@ -529,8 +531,18 @@ class MAPIMsgStoreMsg(MsgStoreMsg):
         # Content-Type from the headers (if present), the email pkg
         # considers the body to be text/plain (the default), and so it
         # does get tokenized.
+        #
+        # Problem #2:  Outlook decodes quoted-printable and base64 on its
+        # own, but leaves any Content-Transfer-Encoding line in the headers.
+        # This can cause the email pkg to try to decode the text again,
+        # with unpleasant (but rarely fatal) results.  If we strip that
+        # header too, no problem -- although the fact that a msg was
+        # encoded in base64 is usually a good spam clue, and we miss that.
+        #
         # Short course:  we either have to synthesize non-insane MIME
         # structure, or eliminate all evidence of original MIME structure.
+        # Since we don't have a way to the former, by default this function
+        # does the latter.
         import email
         text = self._GetMessageText()
         try:
@@ -539,9 +551,11 @@ class MAPIMsgStoreMsg(MsgStoreMsg):
             print "FAILED to create email.message from: ", `text`
             raise
 
-        if strip_content_type:
+        if strip_mime_headers:
             if msg.has_key('content-type'):
                 del msg['content-type']
+            if msg.has_key('content-transfer-encoding'):
+                del msg['content-transfer-encoding']
 
         return msg
 

@@ -248,7 +248,7 @@ def ShowClues(mgr, app):
     # Now the raw text of the message, as best we can
     push("<h2>Message Stream:</h2><br>")
     push("<PRE>\n")
-    msg = msgstore_message.GetEmailPackageObject(strip_content_type=False)
+    msg = msgstore_message.GetEmailPackageObject(strip_mime_headers=False)
     push(escape(msg.as_string(), True))
     push("</PRE>\n")
     body = ''.join(body)
