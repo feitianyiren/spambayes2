@@ -28,7 +28,7 @@ header.  Usage:
         bayescustomize.ini.
 
 For safety, and to help debugging, the whole POP3 conversation is
-written out to _pop3proxy.log for each run.
+written out to _pop3proxy.log for each run, if options.verbose is True.
 
 To make rebuilding the database easier, uploaded messages are appended
 to _pop3proxyham.mbox and _pop3proxyspam.mbox.
@@ -165,7 +165,8 @@ class Listener(asyncore.dispatcher):
         s.setblocking(False)
         self.set_socket(s, socketMap)
         self.set_reuse_addr()
-        print "%s listening on port %d." % (self.__class__.__name__, port)
+        if options.verbose:
+            print "%s listening on port %d." % (self.__class__.__name__, port)
         self.bind(('', port))
         self.listen(5)
 
@@ -388,6 +389,7 @@ class BayesProxyListener(Listener):
     def __init__(self, serverName, serverPort, proxyPort):
         proxyArgs = (serverName, serverPort)
         Listener.__init__(self, proxyPort, BayesProxy, proxyArgs)
+        print 'Listener on port %d is proxying %s:%d' % (proxyPort, serverName, serverPort)
 
 
 class BayesProxy(POP3ProxyBase):
@@ -428,8 +430,9 @@ class BayesProxy(POP3ProxyBase):
 
     def send(self, data):
         """Logs the data to the log file."""
-        state.logFile.write(data)
-        state.logFile.flush()
+        if options.verbose:
+            state.logFile.write(data)
+            state.logFile.flush()
         try:
             return POP3ProxyBase.send(self, data)
         except socket.error:
@@ -441,8 +444,9 @@ class BayesProxy(POP3ProxyBase):
     def recv(self, size):
         """Logs the data to the log file."""
         data = POP3ProxyBase.recv(self, size)
-        state.logFile.write(data)
-        state.logFile.flush()
+        if options.verbose:
+            state.logFile.write(data)
+            state.logFile.flush()
         return data
 
     def close(self):
@@ -564,6 +568,7 @@ class UserInterfaceListener(Listener):
 
     def __init__(self, uiPort, socketMap=asyncore.socket_map):
         Listener.__init__(self, uiPort, UserInterface, (), socketMap=socketMap)
+        print 'User interface url is http://localhost:%d' % (uiPort)
 
 
 # Until the user interface has had a wider audience, I won't pollute the
@@ -1214,7 +1219,8 @@ class State:
         and are then overridden by the command-line processing code in the
         __main__ code below."""
         # Open the log file.
-        self.logFile = open('_pop3proxy.log', 'wb', 0)
+        if options.verbose:
+            self.logFile = open('_pop3proxy.log', 'wb', 0)
 
         # Load up the old proxy settings from Options.py / bayescustomize.ini
         # and give warnings if they're present.   XXX Remove these soon.
