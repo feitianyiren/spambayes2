@@ -29,7 +29,7 @@ import sys
 
 from tokenizer import tokenize
 from TestDriver import Driver
-from timtest import Msg
+from msgs import Msg
 from Options import options
 
 try:
