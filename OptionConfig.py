@@ -31,7 +31,6 @@ import SmarterHTTPServer
 import BaseHTTPServer
 from spambayes.Options import options
 import re
-from cStringIO import StringIO
 import os
 import ConfigParser
 import copy
