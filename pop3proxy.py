@@ -1571,7 +1571,7 @@ def test():
 # __main__ driver.
 # ===================================================================
 
-if __name__ == '__main__':
+def run():
     # Read the arguments.
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'htdbzp:l:u:')
@@ -1632,3 +1632,6 @@ if __name__ == '__main__':
 
     else:
         print >>sys.stderr, __doc__
+
+if __name__ == '__main__':
+    run()
