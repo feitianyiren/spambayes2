@@ -229,7 +229,7 @@ class BayesManager:
             print "WARNING: Bayes database has %d messages, " \
                   "but training database has %d" % \
                   (bayes.nspam + bayes.nham, len(self.message_db))
-            
+
         if self.verbose:
             print "Saving bayes database with %d spam and %d good messages" %\
                    (bayes.nspam, bayes.nham)
