@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 """Generic interface to all dbm clones.
 
 This is just like anydbm from the Python distribution, except that this
@@ -16,7 +17,7 @@ except (NameError, TypeError):
 
 if sys.platform in ["win32"]:
     # dbm on windows is awful.
-    _names = ["dbhash", "gdbm", "dumbdbm"]
+    _names = ["bsddb3", "gdbm", "dumbdbm"]
 else:
     _names = ["dbhash", "gdbm", "dbm", "dumbdbm"]
 _errors = [error]
