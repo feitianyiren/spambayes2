@@ -14,8 +14,7 @@ try:
 except (NameError, TypeError):
     error = "anydbm.error"
 
-# XXX: Some windows dude should fix this test
-if sys.platform == "windows":
+if sys.platform in ["win32"]:
     # dbm on windows is awful.
     _names = ["dbhash", "gdbm", "dumbdbm"]
 else:
