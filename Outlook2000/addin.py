@@ -198,7 +198,7 @@ class SpamFolderItemsEvent(_BaseItemsEvent):
         if prop is not None:
             import train
             trained_as_good = train.been_trained_as_ham(msgstore_message, self.manager)
-            if self.manager.config.filter.spam_threshold > prop or \
+            if self.manager.config.filter.spam_threshold > prop * 100 or \
                trained_as_good:
                 subject = item.Subject.encode("mbcs", "replace")
                 print "Training on message '%s' - " % subject,
@@ -221,7 +221,7 @@ def ShowClues(mgr, explorer):
         return
 
     item = msgstore_message.GetOutlookItem()
-    score, clues = mgr.score(msgstore_message, evidence=True, scale=False)
+    score, clues = mgr.score(msgstore_message, evidence=True)
     new_msg = app.CreateItem(0)
     # NOTE: Silly Outlook always switches the message editor back to RTF
     # once the Body property has been set.  Thus, there is no reasonable

@@ -3,10 +3,7 @@ Outlook 2000, courtesy of Sean True and Mark Hammond.  Note that you need
 Python's win32com extensions (http://starship.python.net/crew/mhammond) and
 you *must* have win32all-149 or later.
 
-CDO is no longer needed :)
-
-See below for a list of known problems (particularly that you must manually
-create an Outlook property before you can see the Spam scores)
+See below for a list of known problems.
 
 Outlook Addin
 ==========
