@@ -342,7 +342,18 @@ hammie_debug_header: False
 
 # Name of a debugging header for spambayes hackers, showing the strongest
 # clues that have resulted in the classification in the standard header.
-hammie_debug_header_name: X-Hammie-Debug
+hammie_debug_header_name: X-Spambayes-Debug
+
+# Train when filtering?  After filtering a message, hammie can then
+# train itself on the judgement (ham or spam).  This can speed things up
+# with a procmail-based solution.  If you do enable this, please make
+# sure to retrain any mistakes.  Otherwise, your word database will
+# slowly become useless.
+hammie_train_on_filter: False
+
+# When training on a message, the name of the header to add with how it
+# was trained
+hammie_trained_header: X-Spambayes-Trained
 
 # The range of clues that are added to the "debug" header in the E-mail
 # All clues that have their probability smaller than this number, or larger
@@ -462,6 +473,8 @@ all_options = {
                'header_score_logarithm': boolean_cracker,
                'hammie_debug_header': boolean_cracker,
                'hammie_debug_header_name': string_cracker,
+               'hammie_train_on_filter': boolean_cracker,
+               'hammie_trained_header': string_cracker,
                },
     'hammiefilter' : {'hammiefilter_persistent_use_database': boolean_cracker,
                       'hammiefilter_persistent_storage_file': string_cracker,

@@ -61,7 +61,7 @@ class Hammie:
 
     def filter(self, msg, header=None, spam_cutoff=None,
                ham_cutoff=None, debugheader=None,
-               debug=None):
+               debug=None, train=None):
         """Score (judge) a message and add a disposition header.
 
         msg can be a string, a file object, or a Message object.
@@ -72,6 +72,11 @@ class Hammie:
 
         An extra debugging header can be added if 'debug' is set to True.
         The name of the debugging header is given as 'debugheader'.
+
+        If 'train' is True, also train on the result of scoring the
+        message (ie. train as ham if it's ham, train as spam if it's
+        spam).  You'll want to be very dilligent about retraining
+        mistakes if you use this.
 
         All defaults for optional parameters come from the Options file.
 
@@ -89,6 +94,8 @@ class Hammie:
             debugheader = options.hammie_debug_header_name
         if debug == None:
             debug = options.hammie_debug_header
+        if train == None:
+            train = options.hammie_train_on_filter
 
         msg = mboxutils.get_message(msg)
         try:
@@ -97,11 +104,20 @@ class Hammie:
             pass
         prob, clues = self._scoremsg(msg, True)
         if prob < ham_cutoff:
-            disp = options.header_ham_string
+            is_spam = False
+            trained = options.header_ham_string
+            disp = trained
         elif prob > spam_cutoff:
-            disp = options.header_spam_string
+            is_spam = True
+            trained = options.header_spam_string
+            disp = trained
         else:
+            is_spam = False
+            trained = options.header_ham_string
             disp = options.header_unsure_string
+        if train:
+            self.train(msg, is_spam)
+            msg.add_header(options.hammie_trained_header, trained)
         disp += ("; %."+str(options.header_score_digits)+"f") % prob
         if options.header_score_logarithm:
             if prob<=0.005 and prob>0.0:
