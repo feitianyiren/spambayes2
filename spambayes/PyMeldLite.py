@@ -488,10 +488,10 @@ else:
         # valid - who are we to argue?  Expat thinks it knows better, so we
         # fool it here.
         def _mungeEntities(self, data):
-            return re.sub(r'&(\w+);', r':PyMeldEntity:\1:', data)
+            return re.sub(r'&([A-Za-z0-9#]+);', r':PyMeldEntity:\1:', data)
 
         def _unmungeEntities(self, data):
-            return re.sub(r':PyMeldEntity:(\w+):', r'&\1;', data)
+            return re.sub(r':PyMeldEntity:([A-Za-z0-9#]+):', r'&\1;', data)
 
         def feed(self, data):
             """Call this with XML content to be parsed."""
