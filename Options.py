@@ -356,16 +356,22 @@ persistent_use_database: False
 [pop3proxy]
 # pop3proxy settings - pop3proxy also respects the options in the Hammie
 # section, with the exception of the extra header details at the moment.
-# The only mandatory option is pop3proxy_server_name, eg. pop3.my-isp.com,
-# but that can come from the command line - see "pop3proxy -h".
-pop3proxy_server_name: ""
-pop3proxy_server_port: 110
-pop3proxy_port: 110
+# The only mandatory option is pop3proxy_servers, eg. "pop3.my-isp.com:110",
+# or a comma-separated list of those.  The ":110" is optional.  If you
+# specify more than one server in pop3proxy_servers, you must specify the
+# same number of ports in pop3proxy_ports.
+pop3proxy_servers: ""
+pop3proxy_ports: ""
 pop3proxy_cache_use_gzip: False
 pop3proxy_cache_expiry_days: 7
 pop3proxy_spam_cache: pop3proxy-spam-cache
 pop3proxy_ham_cache: pop3proxy-ham-cache
 pop3proxy_unknown_cache: pop3proxy-unknown-cache
+
+# Deprecated - use pop3proxy_servers and pop3proxy_ports instead.
+pop3proxy_server_name: ""
+pop3proxy_server_port: 110
+pop3proxy_port: 110
 
 [html_ui]
 html_ui_port: 8880
@@ -440,7 +446,9 @@ all_options = {
                'hammie_debug_header': boolean_cracker,
                'hammie_debug_header_name': string_cracker,
                },
-    'pop3proxy': {'pop3proxy_server_name': string_cracker,
+    'pop3proxy': {'pop3proxy_servers': string_cracker,
+                  'pop3proxy_ports': string_cracker,
+                  'pop3proxy_server_name': string_cracker,
                   'pop3proxy_server_port': int_cracker,
                   'pop3proxy_port': int_cracker,
                   'pop3proxy_cache_use_gzip': boolean_cracker,
