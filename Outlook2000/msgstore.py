@@ -85,6 +85,7 @@ from win32com.mapi.mapitags import *
 import pythoncom
 
 MESSAGE_MOVE = 0x1 # from MAPIdefs.h
+MSGFLAG_READ = 0x1 # from MAPIdefs.h
 MYPR_BODY_HTML_A = 0x1013001e # magic <wink>
 MYPR_BODY_HTML_W = 0x1013001f # ditto
 
@@ -281,6 +282,12 @@ class MAPIMsgStoreFolder(MsgStoreMsg):
     def GetMessageGenerator(self):
         folder = self.msgstore._OpenEntry(self.id)
         table = folder.GetContentsTable(0)
+        # Limit ourselves to IPM.Note objects - ie, messages.
+        restriction = (mapi.RES_PROPERTY,   # a property restriction
+                       (mapi.RELOP_GE,      # >=
+                        PR_MESSAGE_CLASS_A,   # of the this prop
+                        (PR_MESSAGE_CLASS_A, "IPM.Note"))) # with this value
+        table.Restrict(restriction, 0)
         prop_ids = PR_ENTRYID, PR_SEARCH_KEY, PR_CONTENT_UNREAD
         table.SetColumns(prop_ids, 0)
         while 1:
@@ -305,14 +312,22 @@ class MAPIMsgStoreFolder(MsgStoreMsg):
         prop_ids = PR_ENTRYID, PR_SEARCH_KEY, PR_CONTENT_UNREAD
         table.SetColumns(prop_ids, 0)
         # Set up the restriction
-        prop_restriction = (mapi.RES_PROPERTY,   # a property restriction
-                               (mapi.RELOP_EQ,      # check for equality
-                                PR_CONTENT_UNREAD,   # of the unread flag
-                                (PR_CONTENT_UNREAD, True))
-                            )
+        # Need to check message-flags - PR_CONTENT_UNREAD "optional"
+        prop_restriction = (mapi.RES_BITMASK,   # a bitmask restriction
+                               (mapi.BMR_EQZ,      # when bit is clear
+                                PR_MESSAGE_FLAGS,
+                                MSGFLAG_READ))
         exist_restriction = mapi.RES_EXIST, (field_id,)
         not_exist_restriction = mapi.RES_NOT, (exist_restriction,)
-        restriction = (mapi.RES_AND, (prop_restriction, not_exist_restriction))
+        # A restriction for the message class
+        class_restriction = (mapi.RES_PROPERTY,   # a property restriction
+                             (mapi.RELOP_GE,      # >=
+                              PR_MESSAGE_CLASS_A,   # of the this prop
+                              (PR_MESSAGE_CLASS_A, "IPM.Note"))) # with this value
+        # Put the final restriction together
+        restriction = (mapi.RES_AND, (prop_restriction,
+                                      not_exist_restriction,
+                                      class_restriction))
         table.Restrict(restriction, 0)
         while 1:
             rows = table.QueryRows(70, 0)
@@ -484,12 +499,6 @@ class MAPIMsgStoreMsg(MsgStoreMsg):
                 assert msg.is_multipart()
                 sub = msg.get_payload(0)
                 body = sub.get_payload()
-
-        if not html and not body:
-            # MarkH has only ever seen this when it is indeed true!
-            # (generally as the message has an attachment and nothing else)
-            print "Couldn't find any useful body for message '%s'" \
-                  % (self.GetField(PR_SUBJECT_A),)
 
         return "%s\n%s\n%s" % (headers, html, body)
 
