@@ -149,7 +149,7 @@ from spambayes import storage, tokenizer, mboxutils, PyMeldLite, Dibbler
 from spambayes.FileCorpus import FileCorpus, ExpiryFileCorpus
 from spambayes.FileCorpus import FileMessageFactory, GzipFileMessageFactory
 from email.Iterators import typed_subpart_iterator
-from OptionConfig import OptionsConfigurator
+from spambayes.OptionConfig import OptionsConfigurator
 from spambayes.Options import options
 
 # HEADER_EXAMPLE is the longest possible header - the length of this one

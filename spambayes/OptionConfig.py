@@ -458,6 +458,10 @@ def restoreIniDefaults():
     bcini.write(o)
     o.close()
 
+#
+# Running this standalone is no longer required, and doesn't work out of
+# the box.  The code's here for reference only.
+#
 
 def run(port):
     httpServer = Dibbler.HTTPServer(port)
