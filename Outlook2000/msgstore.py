@@ -228,16 +228,16 @@ class MAPIMsgStore(MsgStore):
                          mapi.BinFromHex(message_id.EntryID)
         else:
             message_id = self.NormalizeID(message_id)
-        prop_ids = PR_PARENT_ENTRYID, PR_SEARCH_KEY, PR_CONTENT_UNREAD
+        prop_ids = PR_PARENT_ENTRYID, PR_SEARCH_KEY, PR_MESSAGE_FLAGS
         mapi_object = self._OpenEntry(message_id)
         hr, data = mapi_object.GetProps(prop_ids,0)
         folder_eid = data[0][1]
         searchkey = data[1][1]
-        unread = data[2][1]
+        flags = data[2][1]
         folder_id = message_id[0], folder_eid
         folder = MAPIMsgStoreFolder(self, folder_id,
                                     "Unknown - temp message", -1)
-        return  MAPIMsgStoreMsg(self, folder, message_id, searchkey, unread)
+        return  MAPIMsgStoreMsg(self, folder, message_id, searchkey, flags)
 
 _MapiTypeMap = {
     type(0.0): PT_DOUBLE,
@@ -288,7 +288,7 @@ class MAPIMsgStoreFolder(MsgStoreMsg):
                         PR_MESSAGE_CLASS_A,   # of the this prop
                         (PR_MESSAGE_CLASS_A, "IPM.Note"))) # with this value
         table.Restrict(restriction, 0)
-        prop_ids = PR_ENTRYID, PR_SEARCH_KEY, PR_CONTENT_UNREAD
+        prop_ids = PR_ENTRYID, PR_SEARCH_KEY, PR_MESSAGE_FLAGS
         table.SetColumns(prop_ids, 0)
         while 1:
             # Getting 70 at a time was the random number that gave best
@@ -309,10 +309,12 @@ class MAPIMsgStoreFolder(MsgStoreMsg):
         resolve_ids = folder.GetIDsFromNames(resolve_props, 0)
         field_id = PROP_TAG( PT_I4, PROP_ID(resolve_ids[0]))
         # Setup the properties we want to read.
-        prop_ids = PR_ENTRYID, PR_SEARCH_KEY, PR_CONTENT_UNREAD
+        prop_ids = PR_ENTRYID, PR_SEARCH_KEY, PR_MESSAGE_FLAGS
         table.SetColumns(prop_ids, 0)
         # Set up the restriction
-        # Need to check message-flags - PR_CONTENT_UNREAD "optional"
+        # Need to check message-flags
+        # (PR_CONTENT_UNREAD is optional, and somewhat unreliable
+        # PR_MESSAGE_FLAGS & MSGFLAG_READ is the official way)
         prop_restriction = (mapi.RES_BITMASK,   # a bitmask restriction
                                (mapi.BMR_EQZ,      # when bit is clear
                                 PR_MESSAGE_FLAGS,
@@ -339,7 +341,7 @@ class MAPIMsgStoreFolder(MsgStoreMsg):
                                       item_id, row[1][1], row[2][1])
 
 class MAPIMsgStoreMsg(MsgStoreMsg):
-    def __init__(self, msgstore, folder, entryid, searchkey, unread):
+    def __init__(self, msgstore, folder, entryid, searchkey, flags):
         self.folder = folder
         self.msgstore = msgstore
         self.mapi_object = None
@@ -351,7 +353,8 @@ class MAPIMsgStoreMsg(MsgStoreMsg):
         # (ie, someone would need to really want to change it <wink>)
         # Thus, searchkey is the only reliable long-lived message key.
         self.searchkey = searchkey
-        self.unread = unread
+        self.flags = flags
+        self.unread = flags & MSGFLAG_READ == 0
         self.dirty = False
 
     def __repr__(self):
