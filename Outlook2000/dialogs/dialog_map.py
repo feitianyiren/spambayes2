@@ -174,18 +174,25 @@ class FilterStatusProcessor(ControlProcessor):
         # ok, enabled and working - put together the status text.
         config = manager.config.filter
         certain_spam_name = manager.FormatFolderNames(
-                                      [config.spam_folder_id], False)
+                                    [config.spam_folder_id], False)
         if config.unsure_folder_id:
             unsure_name = manager.FormatFolderNames(
                                     [config.unsure_folder_id], False)
-            unsure_text = _("unsure managed in '%s'") % (unsure_name,)
+            unsure_text = _("Unsure managed in '%s'") % (unsure_name,)
         else:
-            unsure_text = _("unsure messages untouched")
+            unsure_text = _("Unsure messages untouched")
+        if config.ham_folder_id:
+            ham_name = manager.FormatFolderNames(
+                                    [config.ham_folder_id], False)
+            ham_text = _("Good managed in '%s'") % (ham_name,)
+        else:
+            ham_text = _("Good messages untouched")
 
         watch_names = manager.FormatFolderNames(
                         config.watch_folder_ids, config.watch_include_sub)
-        filter_status = _("Watching '%s'. Spam managed in '%s', %s.") \
+        filter_status = _("Watching '%s'.\r\n%s.\r\nSpam managed in '%s'.\r\n%s.") \
                                 % (watch_names,
+                                   ham_text,
                                    certain_spam_name,
                                    unsure_text)
         win32gui.SendMessage(self.GetControl(), win32con.WM_SETTEXT,
