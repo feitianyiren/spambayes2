@@ -293,7 +293,7 @@ class ButtonDeleteAsSpamEvent(ButtonDeleteAsEventBase):
         self.TooltipText = \
                         "Move the selected message to the Spam folder,\n" \
                         "and train the system that this is Spam."
-        SetButtonImage(self, image)
+        SetButtonImage(self, image, manager)
 
     def OnClick(self, button, cancel):
         msgstore = self.manager.message_store
@@ -331,7 +331,7 @@ class ButtonRecoverFromSpamEvent(ButtonDeleteAsEventBase):
                 "it was filtered from (or to the Inbox if this\n" \
                 "folder is not known), and trains the system that\n" \
                 "this is a good message\n"
-        SetButtonImage(self, image)
+        SetButtonImage(self, image, manager)
 
     def OnClick(self, button, cancel):
         msgstore = self.manager.message_store
@@ -360,19 +360,15 @@ class ButtonRecoverFromSpamEvent(ButtonDeleteAsEventBase):
             # but we are smart enough to know we have already done it.
 
 # Helpers to work with images on buttons/toolbars.
-def SetButtonImage(button, fname):
+def SetButtonImage(button, fname, manager):
     # whew - http://support.microsoft.com/default.aspx?scid=KB;EN-US;q288771
     # shows how to make a transparent bmp.
     # Also note that the clipboard takes ownership of the handle -
     # this, we can not simply perform this load once and reuse the image.
     if not os.path.isabs(fname):
-        if hasattr(sys, "frozen"):
-            # images relative to the executable.
-            fname = os.path.join(os.path.dirname(sys.argv[0]),
+        # images relative to the application path
+        fname = os.path.join(manager.application_directory,
                                  "images", fname)
-        else:
-            # Ensure references are relative to this .py file
-            fname = os.path.join( os.path.dirname(__file__), "images", fname)
     if not os.path.isfile(fname):
         print "WARNING - Trying to use image '%s', but it doesn't exist" % (fname,)
         return None
@@ -505,6 +501,11 @@ class ExplorerWithEvents:
 
     # The Outlook event handlers
     def OnActivate(self):
+        # See comments for OnNewExplorer below.
+        # *sigh* - OnActivate seems too early too :(
+        pass
+
+    def OnSelectionChange(self):
         # See comments for OnNewExplorer below.
         if not self.have_setup_ui:
             self.SetupUI()
