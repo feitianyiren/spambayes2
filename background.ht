@@ -17,39 +17,39 @@ suggesting some improvements to Graham's original approach.
 <a href="mailto:anthony@interlink.com.au">anthony@interlink.com.au</a></i></p>
 
 <h2>Overall Approach</h2>
-<b>Please note that I (Anthony) am writing this based on memory and
-limited understanding of some of the subtler points of the maths. Gentle
-corrections are welcome, or even encouraged.</b>
+<p class="note"><b>Please note that I (Anthony) am writing this based on memory and limited understanding of some of the subtler points of the maths. Gentle corrections are welcome, or even encouraged.</b></p>
+
 <h3>Tokenizing</h3>
 <p>The architecture of the spambayes system has a couple of distinct 
 parts. The first, and most obvious, is the <i>tokenizer</i>. This takes
-a mail message and breaks it up into a series of tokens. At the moment
-it splits words out of the text parts of a message, there's a variety
-of header tokenization that goes on as well. The code in tokenizer.py
-and the comments in the Tokenizer section of Options.py contain more 
-information about various approaches to tokenizing.</p>
+a mail message and breaks it up into a series of tokens (words). At the 
+moment it splits words out of the text parts of a message, stripping out 
+various HTML snippets and other bits of junk, such as images. In addition,
+there's a variety of mail header interpretation and tokenization that goes 
+on as well. The code in tokenizer.py and the comments in the Tokenizer 
+section of Options.py contain more information about various approaches 
+to tokenizing, as well as various things that have been tried and found 
+to make little or no difference.</p>
+
+<!-- correlation of clues, ... -->
 
 <h3>Combining and Scoring</h3>
 
 <p>The next part of the system is the scoring and combining part. This
 is where the hairy mathematics and statistics come in. </p>
+<!-- basic overview goes here -->
 <p>Initially we started with Paul Graham's original combining scheme -
 a "Naive Bayes" scheme, of sorts - 
 this has a number of "magic numbers" and "fuzz factors" built into it. 
-<p class="note">Gary's essay, linked above, has this to say on the 'Bayesianess'
-of the original Graham scheme:<br>
-<font style="normal">
-   Paul's approach has become fairly famous for filtering spam in a Bayesian way. That's only true if we make fairly large leaps of the imagination. Originally after reading his issay I thought that it was in no way Bayesian, but I have since noticed that if and only if a particular less-than-optimal assumption is made, part of it could be viewed as Bayesian through a very obscure argument. But it's a pretty remote case for Bayesianness. In any case, there's no need to dwell on Bayesianness or non-Bayesianness; we have bigger fish to fry. (Note: Tim Peters of spambayes fame has posted another way of looking at Paul's approach as Bayesian, although to do so he needs to make the unrealistic assumption that spams and non-spams are equally likely.)
-</font></p>
-
 <p>The Graham combining scheme has a number of problems, aside from the
 magic in the internal fudge factors - it tends to produce scores of 
-either 1 or 0, and there's a very small middle ground in between - it 
+either 1 (definite spam) or 0 (definite ham), and there's a very small 
+middle ground in between - it 
 doesn't often claim to be "unsure", and gets it wrong because of this. 
 The following plot shows the problem: </p>
 <p class="note"><b>Note:</b>In each of these plots, the X 
 axis shows the 'score' of the message, scaled to 0-100. 
-(where 0 is "definately ham", and 100 is "definately spam"), and
+(where 0 is "definitely ham", and 100 is "definitely spam"), and
 the Y axis shows the number of messages with that score (scaled 
 logarithmically). Note also that the plots aren't from the same data
 set :-( but are "typical" plots that you'd see from a given technique.
@@ -113,7 +113,21 @@ unsure messages vs possible false positives or negatives. In the chi-squared
 results, the "unsure" window can be quite large, and still result in very small numbers of "unsure" messages. </P>
 
 <h3>Training</h3>
-<p>TBD</p>
+<p class="todo">TBD</p>
+
+<h3>Testing</h3>
+<p class="todo">TBD, describe test setup</p>
+<p>One big difference between spambayes and many other open source projects is
+that there's a large amount of testing done. Before any change to the tokenizer
+or the algorithms was checked in, it was necessary to show that the change 
+actually produced an improvement. Many fine ideas that <i>seemed</i> like 
+they should make a positive difference to the results actually turned out to
+have no impact, or even made things worse. About the only "general rule" that
+kept showing up was <font size="+1">Stupid beats smart.</font> That is, a
+fiddly and delicate piece of tokenization magic would often produce worse
+results than something that just took a brute force "just grab everything"
+approach. </p>
+<p>
 
 <h2>Mailing list archives</h2>
 <p>There's a lot of background on what's been tried available from

@@ -5,14 +5,25 @@ Author: spambayes
 <H2>What is SpamBayes?</h2>
 <p>
 This project is developing a Bayesian anti-spam classifier, initially
-based on the work of <a href="http://www.paulgraham.com/spam.html">Paul Graham.</a> A major difference between this project and many others that are doing similar work is the emphasis on testing and trialing newer and different approaches to scoring messages. While most projects are still working with the initial Graham approach, we found that a number of different approaches yielded a much more useful response. An attempt at documenting this is on the <a href="background.html">background</a> page.
+based on the work of <a href="http://www.paulgraham.com/spam.html">Paul Graham.</a> A major difference between this project and many others that are doing similar work is the emphasis on testing and trialling newer and different approaches to scoring messages. While most projects are still working with the initial Graham approach, we found that a number of different approaches yielded a much more useful response. An attempt at documenting this is on the <a href="background.html">background</a> page.
 </p>
+
+<h2>That's great, but what is SpamBayes?</h2>
+<h3>(the non-technical hand-waving answer)</h3>
+<p>Spambayes attempts to classify incoming email messages as 'spam', 'ham' (good, non-spam email) or 'unsure'. It does this by first being <a href="docs.html#glossary">trained</a> on sample spam and ham messages. Think of this process as showing spambayes "this pile is email that I like, and this pile is email that I don't like". These messages are analyzed for words, clues from the mailer headers, and other esoteric hints, so that the system can figure out what makes the piles different. The system then uses these clues to examine new messages.</p>
+<p>For instance, the word "Nigeria" is a common one in spam - so you could simply try a spam filter where 'anything with the word "Nigeria" in it is spam'. This approach has a few pitfalls - what if your business involves writing a guidebook for Nigeria, for example? Over time, spammers will adapt, and will no longer use words like 'Nigeria' (or 'Lose weight fast', or any of the other hucksterish lines). Ideally, we want something that adapts as the spammers adapt.</p>
+<p>So, this is what spambayes does. It looks at the spam, and looks at the ham, and calculates probabilities. For instance, for me, the word "weight" almost never occurs in legitimate email, but it occurs all the time in 'lose weight fast spam'. So for my setup, the word "weight" is a good indication of spamminess. Spambayes looks at incoming email messages, extracts the most significant clues (ones that occur mostly in spam, or mostly in ham), and combines the probabilities to produce an overall rating of 'spamminess'.</p>
+
+<h2>How is SpamBayes different?</h2>
+<p>There are a number of <a href="related.html">similar projects</a> to spambayes - most are just using the original Paul Graham algorithm. Examining the Graham technique with careful testing showed that it did a remarkably good job, but there was considerable room for improvement - in particular, when it got something wrong, it got it <i>completely</i> wrong. The spambayes team (primarily Tim Peters with a supporting cast providing testing, heckling, and different ideas) tinkered with new algorithms, tweaking existing algorithms, and, most importantly, did enormous test runs, slamming tens of thousands of messages against tens of thousands of messages, in an attempt to quantify whether or not a change to the system was beneficial.</p>
+<p>The new algorithm is a combination of work from Gary Robinson and Tim Peters, and provides not just a 'spam' and 'ham' rating, but also an 'unsure' rating, for those messages where it just can't work out how to rate the message.</p>
+<p>For more on this, see the <a href="background.html">background</a> page.</p>
+
 
 <p>Code is currently available 
 <a href="http://sourceforge.net/cvs/?group_id=61702">via CVS</a> - 
-note that it's not yet 
-suitable for non-technical end-users, but for people interested 
-in experimenting.
+note that it's not quite yet suitable for non-technical end-users, but 
+for people interested in experimenting.
 </p>
 <p>
 There are now a couple of end-user applications available for those
