@@ -224,9 +224,15 @@ class BayesManager:
 
     def SaveBayes(self):
         bayes = self.bayes
+        # Try and work out where this count sometimes goes wrong.
+        if bayes.nspam + bayes.nham != len(self.message_db):
+            print "WARNING: Bayes database has %d messages, " \
+                  "but training database has %d" % \
+                  (bayes.nspam + bayes.nham, len(self.message_db))
+            
         if self.verbose:
-            print ("Saving bayes database with %d spam and %d good messages" %
-                   (bayes.nspam, bayes.nham))
+            print "Saving bayes database with %d spam and %d good messages" %\
+                   (bayes.nspam, bayes.nham)
             print " ->", self.bayes_filename
         cPickle.dump(bayes, open(self.bayes_filename,"wb"), 1)
         if self.verbose:
