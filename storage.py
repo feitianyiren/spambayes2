@@ -1,28 +1,23 @@
 #! /usr/bin/env python
 
-'''Persistent.py - Spambayes database management framework.
+'''storage.py - Spambayes database management framework.
 
 Classes:
-    PersistentClassifier - subclass of Classifier, adds auto persistence
-    PickledClassifier - PersistentClassifier that uses a pickle db
-    DBDictClassifier - PersistentClassifier that uses a DBDict db
+    PickledClassifier - Classifier that uses a pickle db
+    DBDictClassifier - Classifier that uses a DBDict db
     Trainer - Classifier training observer
     SpamTrainer - Trainer for spam
     HamTrainer - Trainer for ham
 
 Abstract:
-    PersistentClassifier is an abstract subclass of Classifier (classifier.Classifier)
-    that adds automatic state store/restore function to the Classifier class.
-    It also adds a convenience method, which should probably
-    more properly be defined in Classifier: classify, which returns
-    'spam'|'ham'|'unsure' for a message based on the spamprob against
-    the ham_cutoff and spam_cutoff specified in Options.
+    *Classifier are subclasses of Classifier (classifier.Classifier)
+    that add automatic state store/restore function to the Classifier class.
 
-    PickledClassifier is a concrete PersistentClassifier class that uses a cPickle
+    PickledClassifier is a Classifier class that uses a cPickle
     datastore.  This database is relatively small, but slower than other
     databases.
 
-    DBDictClassifier is a concrete PersistentClassifier class that uses a DBDict
+    DBDictClassifier is a Classifier class that uses a DBDict
     datastore.
 
     Trainer is concrete class that observes a Corpus and trains a
@@ -60,46 +55,15 @@ import errno
 PICKLE_TYPE = 1
 NO_UPDATEPROBS = False   # Probabilities will not be autoupdated with training
 UPDATEPROBS = True       # Probabilities will be autoupdated with training
+DEBUG = False
 
-class PersistentClassifier(classifier.Classifier):
-    '''Persistent Classifier database object'''
+class PickledClassifier(classifier.Classifier):
+    '''Classifier object persisted in a pickle'''
 
     def __init__(self, db_name):
-        '''Constructor(database name)'''
-
         classifier.Classifier.__init__(self)
         self.db_name = db_name
-        self.load()
-
-    def load(self):
-        '''Restore state from a persistent store'''
-
-        raise NotImplementedError
-
-    def store(self):
-        '''Persist state into a persistent store'''
-
-        raise NotImplementedError
-
-    def classify(self, message):
-        '''Returns the classification of a Message {'spam'|'ham'|'unsure'}'''
-
-        prob = self.spamprob(message.tokenize())
-
-        message.setSpamprob(prob)   # don't like this
-
-        if prob < options.ham_cutoff:
-            type = 'ham'
-        elif prob > options.spam_cutoff:
-            type = 'spam'
-        else:
-            type = 'unsure'
-
-        return type
-
-
-class PickledClassifier(PersistentClassifier):
-    '''Classifier object persisted in a pickle'''
+        self.load()    
 
     def load(self):
         '''Load this instance from the pickle.'''
@@ -108,7 +72,7 @@ class PickledClassifier(PersistentClassifier):
         # this object's state is copied.  This is a nuance of the way
         # that pickle does its job
 
-        if False and __debug__:
+        if DEBUG:
             print 'Loading state from',self.db_name,'pickle'
 
         tempbayes = None
@@ -125,12 +89,12 @@ class PickledClassifier(PersistentClassifier):
             self.meta.nham = tempbayes.get_nham()
             self.meta.nspam = tempbayes.get_nspam()
 
-            if False and __debug__:
+            if DEBUG:
                 print '%s is an existing pickle, with %d ham and %d spam' \
                       % (self.db_name, self.nham, self.nspam)
         else:
             # new pickle
-            if False and __debug__:
+            if DEBUG:
                 print self.db_name,'is a new pickle'
             self.wordinfo = {}
             self.meta.nham = 0
@@ -139,7 +103,7 @@ class PickledClassifier(PersistentClassifier):
     def store(self):
         '''Store self as a pickle'''
 
-        if False and __debug__:
+        if DEBUG:
             print 'Persisting',self.db_name,'as a pickle'
 
         fp = open(self.db_name, 'wb')
@@ -155,20 +119,22 @@ class PickledClassifier(PersistentClassifier):
         self.wordinfo, self.meta = t[1:]
 
 
-class DBDictClassifier(PersistentClassifier):
+class DBDictClassifier(classifier.Classifier):
     '''Classifier object persisted in a WIDict'''
 
     def __init__(self, db_name, mode='c'):
         '''Constructor(database name)'''
 
-        self.mode = mode
+        classifier.Classifier.__init__(self)
         self.statekey = "saved state"
-        PersistentClassifier.__init__(self, db_name)
+        self.mode = mode
+        self.db_name = db_name
+        self.load()
 
     def load(self):
         '''Load state from WIDict'''
 
-        if False and __debug__:
+        if DEBUG:
             print 'Loading state from',self.db_name,'WIDict'
 
         self.wordinfo = dbdict.DBDict(self.db_name, self.mode,
@@ -179,12 +145,12 @@ class DBDictClassifier(PersistentClassifier):
             self.set_nham(nham)
             self.set_nspam(nspam)
 
-            if False and __debug__:
+            if DEBUG:
                 print '%s is an existing DBDict, with %d ham and %d spam' \
                       % (self.db_name, self.nham, self.nspam)
         else:
             # new dbdict
-            if False and __debug__:
+            if DEBUG:
                 print self.db_name,'is a new DBDict'
             self.set_nham(0)
             self.set_nspam(0)
@@ -192,7 +158,7 @@ class DBDictClassifier(PersistentClassifier):
     def store(self):
         '''Place state into persistent store'''
 
-        if False and __debug__:
+        if DEBUG:
             print 'Persisting',self.db_name,'state in WIDict'
 
         self.wordinfo[self.statekey] = (self.get_nham(), self.get_nspam())
@@ -218,7 +184,7 @@ class Trainer:
     def train(self, message):
         '''Train the database with the message'''
 
-        if False and __debug__:
+        if DEBUG:
             print 'training with',message.key()
 
         self.bayes.learn(message.tokenize(), self.is_spam)
@@ -232,7 +198,7 @@ class Trainer:
     def untrain(self, message):
         '''Untrain the database with the message'''
 
-        if False and __debug__:
+        if DEBUG:
             print 'untraining with',message.key()
 
         self.bayes.unlearn(message.tokenize(), self.is_spam)

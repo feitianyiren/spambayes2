@@ -118,7 +118,7 @@ Gimmicks:
 
 import os, sys, re, operator, errno, getopt, string, cStringIO, time, bisect
 import socket, asyncore, asynchat, cgi, urlparse, webbrowser
-import Persistent, tokenizer, mboxutils
+import storage, tokenizer, mboxutils
 from FileCorpus import FileCorpus, FileMessageFactory, GzipFileMessageFactory
 from email.Iterators import typed_subpart_iterator
 from Options import options
@@ -1202,9 +1202,9 @@ class State:
         if self.isTest:
             self.databaseFilename = '_pop3proxy_test.pickle'   # Never saved
         if self.useDB:
-            self.bayes = Persistent.DBDictClassifier(self.databaseFilename)
+            self.bayes = storage.DBDictClassifier(self.databaseFilename)
         else:
-            self.bayes = Persistent.PickledClassifier(self.databaseFilename)
+            self.bayes = storage.PickledClassifier(self.databaseFilename)
         print "Done."
 
         # Don't set up the caches and training objects when running the self-test,
@@ -1229,8 +1229,8 @@ class State:
             self.unknownCorpus = FileCorpus(messageFactory, self.unknownCache)
 
             # Create the Trainers.
-            self.spamTrainer = Persistent.SpamTrainer(self.bayes)
-            self.hamTrainer = Persistent.HamTrainer(self.bayes)
+            self.spamTrainer = storage.SpamTrainer(self.bayes)
+            self.hamTrainer = storage.HamTrainer(self.bayes)
             self.spamCorpus.addObserver(self.spamTrainer)
             self.hamCorpus.addObserver(self.hamTrainer)
 

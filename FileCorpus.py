@@ -85,7 +85,7 @@ __credits__ = "Richie Hindle, Tim Peters, all the spambayes contributors."
 from __future__ import generators
 
 import Corpus
-import Persistent
+import storage
 import sys, os, gzip, fnmatch, getopt, errno, time, stat
 
 class FileCorpus(Corpus.Corpus):
@@ -343,14 +343,14 @@ def runTest(useGzip):
         print 'Executing with uncompressed files'
 
     print '\n\nCreating two Classifier databases'
-    miscbayes = Persistent.PickledClassifier('fctestmisc.bayes')
-    classbayes = Persistent.DBDictClassifier('fctestclass.bayes')
+    miscbayes = storage.PickledClassifier('fctestmisc.bayes')
+    classbayes = storage.DBDictClassifier('fctestclass.bayes')
 
     print '\n\nSetting up spam corpus'
     spamcorpus = FileCorpus(fmFact, 'fctestspamcorpus')
-    spamtrainer = Persistent.SpamTrainer(miscbayes)
+    spamtrainer = storage.SpamTrainer(miscbayes)
     spamcorpus.addObserver(spamtrainer)
-    anotherspamtrainer = Persistent.SpamTrainer(classbayes, Persistent.UPDATEPROBS)
+    anotherspamtrainer = storage.SpamTrainer(classbayes, storage.UPDATEPROBS)
     spamcorpus.addObserver(anotherspamtrainer)
 
     keys = spamcorpus.keys()
@@ -365,7 +365,7 @@ def runTest(useGzip):
     hamcorpus = FileCorpus(fmFact, \
                           'fctesthamcorpus', \
                           'MSG*')
-    hamtrainer = Persistent.HamTrainer(miscbayes)
+    hamtrainer = storage.HamTrainer(miscbayes)
     hamcorpus.addObserver(hamtrainer)
     hamtrainer.trainAll(hamcorpus)
 
@@ -419,7 +419,7 @@ We should not see MSG00003 in this iteration.'
 
 
     print '\n\nTrain with an individual message'
-    anotherhamtrainer = Persistent.HamTrainer(classbayes)
+    anotherhamtrainer = storage.HamTrainer(classbayes)
     anotherhamtrainer.train(unsurecorpus['MSG00005'])
 
 

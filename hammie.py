@@ -3,7 +3,7 @@
 
 import dbdict
 import mboxutils
-import Persistent
+import storage
 from Options import options
 from tokenizer import tokenize
 
@@ -179,9 +179,9 @@ def open(filename, usedb=True, mode='r'):
     """
 
     if usedb:
-        b = Persistent.DBDictClassifier(filename, mode)
+        b = storage.DBDictClassifier(filename, mode)
     else:
-        b = Persistent.PickledClassifier(filename)
+        b = storage.PickledClassifier(filename)
     return Hammie(b)
 
 

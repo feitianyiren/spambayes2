@@ -51,7 +51,7 @@ import cPickle as pickle
 from Options import options
 import mboxutils
 import classifier
-import Persistent
+import storage
 import hammie
 import Corpus
 
@@ -103,16 +103,6 @@ def score(h, msgs, reverse=0):
                 print "%6s %4.2f %1s" % (msgno, prob, isspam and "S" or "."),
                 print h.formatclues(clues)
     return (spams, hams)
-
-def createbayes(pck=DEFAULTDB, usedb=False, mode='r'):
-    """Create a Bayes instance for the given pickle (which
-    doesn't have to exist).  Create a PersistentBayes if
-    usedb is True."""
-    if usedb:
-        bayes = Persistent.DBDictClassifier(pck, mode)
-    else:
-        bayes = Persistent.PickledClassifier(pck)
-    return bayes
 
 def usage(code, msg=''):
     """Print usage message and sys.exit(code)."""
