@@ -49,13 +49,7 @@ except NameError:
 
 import sys
 import os
-import types
 import getopt
-import mailbox
-import glob
-import email
-import errno
-import cPickle as pickle
 
 from spambayes.Options import options
 from spambayes import classifier, mboxutils, hammie, Corpus

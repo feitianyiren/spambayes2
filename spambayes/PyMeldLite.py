@@ -707,8 +707,7 @@ class Meld:
         attribute = self._tree.getElementNode().attributes.get(name, _fail)
         if attribute is not _fail:
             return self._unquoteAttribute(attribute)
-        else:
-            raise AttributeError, "No element or attribute named %r" % name
+        raise AttributeError, "No element or attribute named %r" % name
 
     def __setattr__(self, name, value):
         """`object.<name> = value` sets the XML content of the element with an
