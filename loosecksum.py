@@ -65,6 +65,8 @@ def clean(data):
     data = re.sub(r"(?i)[-a-z0-9_.+]+@[-a-z0-9_.]+\.([a-z]+)", "", data)
     # delete anything that looks like a url (catch bare urls)
     data = re.sub(r"(?i)(ftp|http|gopher)://[-a-z0-9_/?&%@=+:;#!~|.,$*]+", "", data)
+    # delete pmguid: stuff (turns up frequently)
+    data = re.sub(r"pmguid:[^.\s]+(\.[^.\s]+)*", "", data)
     # throw away everything other than alpha & digits
     return re.sub(r"[^A-Za-z0-9]+", "", data)
 
