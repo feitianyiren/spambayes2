@@ -1138,13 +1138,13 @@ class State:
             age = options.pop3proxy_cache_expiry_days*24*60*60
             self.spamCorpus = ExpiryFileCorpus(age, factory,
                                                options.pop3proxy_spam_cache,
-                                               cacheSize=20)
+                                               '[0123456789]*', cacheSize=20)
             self.hamCorpus = ExpiryFileCorpus(age, factory,
                                               options.pop3proxy_ham_cache,
-                                              cacheSize=20)
+                                              '[0123456789]*', cacheSize=20)
             self.unknownCorpus = FileCorpus(factory,
                                             options.pop3proxy_unknown_cache,
-                                            cacheSize=20)
+                                            '[0123456789]*', cacheSize=20)
 
             # Expire old messages from the trained corpuses.
             self.spamCorpus.removeExpiredMessages()
