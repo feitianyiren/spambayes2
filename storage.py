@@ -46,6 +46,14 @@ __author__ = "Neale Pickett <neale@woozle.org>, \
 Tim Stone <tim@fourstonesExpressions.com>"
 __credits__ = "All the spambayes contributors."
 
+try:
+    True, False
+except NameError:
+    # Maintain compatibility with Python 2.2
+    True, False = 1, 0
+    def bool(val):
+        return not not val
+
 import classifier
 from Options import options
 import cPickle as pickle
@@ -69,7 +77,7 @@ class PickledClassifier(classifier.Classifier):
     def __init__(self, db_name):
         classifier.Classifier.__init__(self)
         self.db_name = db_name
-        self.load()    
+        self.load()
 
     def load(self):
         '''Load this instance from the pickle.'''
