@@ -650,6 +650,37 @@ class UserInterface(Dibbler.HTTPPlugin):
             raise SystemExit
         self._writePostamble()
 
+    def onUpload(self, params):
+        """Save a message for later training."""
+        # Upload or paste?  Spam or ham?
+        content = params.get('file') or params.get('text')
+
+        # Convert platform-specific line endings into unix-style.
+        content = content.replace('\r\n', '\n').replace('\r', '\n')
+
+        # Single message or mbox?
+        if content.startswith('From '):
+            # Get a list of raw messages from the mbox content.
+            class SimpleMessage:
+                def __init__(self, fp):
+                    self.guts = fp.read()
+            contentFile = StringIO.StringIO(content)
+            mbox = mailbox.PortableUnixMailbox(contentFile, SimpleMessage)
+            messages = map(lambda m: m.guts, mbox)
+        else:
+            # Just the one message.
+            messages = [content]
+
+        for m in messages:
+            message = state.unknownCorpus.makeMessage("%d"%self.messageName)
+            message.setSubstance(m)
+            state.unknownCorpus.addMessage(message)
+            self.messageName += 1
+
+        # Save the database and return a link Home and another training form.
+        self.doSave()
+        self.push("<p>OK.</p>")
+
     def onTrain(self, file, text, which):
         """Train on an uploaded or pasted message."""
         self._writePreamble("Train")
@@ -883,8 +914,11 @@ class UserInterface(Dibbler.HTTPPlugin):
             # info object for each message.
             cachedMessage = state.unknownCorpus[key]
             message = mboxutils.get_message(cachedMessage.getSubstance())
-            judgement = message[options.hammie_header_name] or \
-                                            options.header_unsure_string
+            judgement = message[options.hammie_header_name]
+            if judgement is None:
+                judgement = options.header_unsure_string
+            else:
+                judgement = judgement.split(';')[0].strip()
             messageInfo = self._makeMessageInfo(message)
             keyedMessageInfo[judgement].append((key, messageInfo))
 
