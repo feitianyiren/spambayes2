@@ -4,7 +4,10 @@
 # XXX and must not conflict with OptionsClass method names.
 
 import sys, os
-import StringIO
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
 import ConfigParser
 try: 
     from sets import Set
