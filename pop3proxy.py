@@ -149,6 +149,18 @@ from spambayes.FileCorpus import FileMessageFactory, GzipFileMessageFactory
 from spambayes.OptionConfig import OptionsConfigurator
 from spambayes.Options import options
 
+# Increase the stack size on MacOS X.  Stolen from Lib/test/regrtest.py
+if sys.platform == 'darwin':
+    try:
+        import resource
+    except ImportError:
+        pass
+    else:
+        soft, hard = resource.getrlimit(resource.RLIMIT_STACK)
+        newsoft = min(hard, max(soft, 1024*2048))
+        resource.setrlimit(resource.RLIMIT_STACK, (newsoft, hard))
+
+
 # HEADER_EXAMPLE is the longest possible header - the length of this one
 # is added to the size of each message.
 HEADER_FORMAT = '%s: %%s\r\n' % options.hammie_header_name
