@@ -224,9 +224,6 @@ class BayesManager:
                           "user-property in folder '%s'" \
                           % (folder.Name.encode("mbcs", "replace"),)
                     print "", details
-                    print " This is probably because the code has recently"\
-                          " been changed, but it will"
-                    print " have no effect on the filtering or scoring."
         # else no items in this folder - not much worth doing!
         if include_sub:
             # Recurse down the folder list.
