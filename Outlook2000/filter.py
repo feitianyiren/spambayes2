@@ -31,12 +31,12 @@ def filter_message(msg, mgr, all_actions=True):
         if all_actions and attr_prefix is not None:
             folder_id = getattr(config, attr_prefix + "_folder_id")
             action = getattr(config, attr_prefix + "_action").lower()
-            if action.startswith("no"):
+            if action.startswith("un"): # untouched
                 pass
-            elif action.startswith("co"):
+            elif action.startswith("co"): # copied
                 dest_folder = mgr.message_store.GetFolder(folder_id)
                 msg.CopyTo(dest_folder)
-            elif action.startswith("mo"):
+            elif action.startswith("mo"): # Moved
                 dest_folder = mgr.message_store.GetFolder(folder_id)
                 msg.MoveTo(dest_folder)
             else:
