@@ -33,9 +33,15 @@ information about various approaches to tokenizing.</p>
 <p>The next part of the system is the scoring and combining part. This
 is where the hairy mathematics and statistics come in. </p>
 <p>Initially we started with Paul Graham's original combining scheme -
-a "Naive Bayes" scheme, of sorts  - 
+a "Naive Bayes" scheme, of sorts - 
 this has a number of "magic numbers" and "fuzz factors" built into it. 
-The Graham combining scheme has a number of problems, aside from the
+<p class="note">Gary's essay, linked above, has this to say on the 'Bayesianess'
+of the original Graham scheme:<br>
+<font style="normal">
+   Paul's approach has become fairly famous for filtering spam in a Bayesian way. That's only true if we make fairly large leaps of the imagination. Originally after reading his issay I thought that it was in no way Bayesian, but I have since noticed that if and only if a particular less-than-optimal assumption is made, part of it could be viewed as Bayesian through a very obscure argument. But it's a pretty remote case for Bayesianness. In any case, there's no need to dwell on Bayesianness or non-Bayesianness; we have bigger fish to fry. (Note: Tim Peters of spambayes fame has posted another way of looking at Paul's approach as Bayesian, although to do so he needs to make the unrealistic assumption that spams and non-spams are equally likely.)
+</font></p>
+
+<p>The Graham combining scheme has a number of problems, aside from the
 magic in the internal fudge factors - it tends to produce scores of 
 either 1 or 0, and there's a very small middle ground in between - it 
 doesn't often claim to be "unsure", and gets it wrong because of this. 
