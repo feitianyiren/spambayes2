@@ -465,11 +465,15 @@ class MAPIMsgStoreMsg(MsgStoreMsg):
                            (mapi.RELOP_EQ,      # check for equality
                             PR_ATTACH_MIME_TAG_A,   # of the given prop
                             (PR_ATTACH_MIME_TAG_A, "multipart/signed")))
-            rows = mapi.HrQueryAllRows(table,
-                                       (PR_ATTACH_NUM,), # columns to get
-                                       restriction,    # only these rows
-                                       None,    # any sort order is fine
-                                       0)       # any # of results is fine
+            try:
+                rows = mapi.HrQueryAllRows(table,
+                                           (PR_ATTACH_NUM,), # columns to get
+                                           restriction,    # only these rows
+                                           None,    # any sort order is fine
+                                           0)       # any # of results is fine
+            except pythoncom.com_error:
+                # For some reason there are no rows we can get
+                rows = []
             if len(rows) == 0:
                 pass # Nothing we can fetch :(
             else:
