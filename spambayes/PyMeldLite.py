@@ -615,7 +615,10 @@ class Meld:
         if name == '_content':
             return self._tree.getElementNode().childrenToText()
         if name.startswith('_'):
-            return self.__dict__[name]
+            try:
+                return self.__dict__[name]
+            except KeyError:
+                raise AttributeError, name
         node = self._findByID(self._tree, name)
         if node:
             return Meld(node, self._readonly)
@@ -670,8 +673,11 @@ class Meld:
             self._tree.getElementNode().children = []
             return
         if name.startswith('_'):
-            del self.__dict__[name]
-            return
+            try:
+                del self.__dict__[name]
+                return
+            except KeyError:
+                raise AttributeError, name
         if self._readonly:
             raise ReadOnlyError, READ_ONLY_MESSAGE
         node = self._findByID(self._tree, name)
@@ -1068,7 +1074,11 @@ u'<html><span id="one"><span id="two">Two</span></span></html>'
 >>> print repr(page._private)
 Traceback (most recent call last):
 ...
-KeyError: _private
+AttributeError: _private
+>>> del page._private
+Traceback (most recent call last):
+...
+AttributeError: _private
 >>> print page
 <html>x</html>
 """,
