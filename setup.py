@@ -36,7 +36,6 @@ setup(
            'hammiecli.py',
            'hammiesrv.py',
            'hammiefilter.py',
-           'pop3graph.py',
            'pop3proxy.py',
            'proxytrainer.py',
            'proxytee.py',
