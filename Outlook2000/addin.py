@@ -452,6 +452,7 @@ class ExplorerWithEvents:
 
     # The Outlook event handlers
     def OnActivate(self):
+        # See comments for OnNewExplorer below.
         if not self.have_setup_ui:
             self.SetupUI()
 
@@ -509,6 +510,10 @@ class ExplorersEvent:
         self.explorers.append(explorer)
 
     def OnNewExplorer(self, explorer):
+        # NOTE - Outlook has a bug, as confirmed by many on Usenet, in
+        # that OnNewExplorer is too early to access the CommandBars
+        # etc elements. We hack around this by putting the logic in
+        # the first OnActivate call of the explorer itself.
         self._DoNewExplorer(explorer, False)
 
 # The outlook Plugin COM object itself.
