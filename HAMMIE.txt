@@ -66,8 +66,9 @@ Instructions:
     Pine, which can only read mbox format unless patched, most modern
     MUAs can handle both Maildir and mbox formats.
 
-5.  Add the following cron job ("crontab -e" with vixie cron, the
-    default on most Linux systems):
+5.  Add the following cron job to train on new or refiled messages every
+    morning at 2:21am ("crontab -e" with vixie cron, the default on most
+    Linux systems):
 
       21 2 * * * $HOME/src/mboxtrain.py -d $HOME/.hammiedb -g $HOME/Mail/inbox -s $HOME/Mail/spam
 
@@ -76,6 +77,11 @@ Instructions:
     since otherwise spambays will never learn anything about those
     messages.
 
+6.  Spambayes should now be filtering all your mail and training itself
+    on your mailboxes.  Occasionally a message will be misfiled.  Just
+    move that message to the correct folder, and spambayes will learn
+    from its mistake the next morning.
+    
 -----
 
 That's it!  You're all done.
