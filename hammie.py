@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
 
-import dbdict
 import mboxutils
 import storage
 from Options import options
@@ -44,7 +43,8 @@ class Hammie:
         return sep.join(["%r: %.2f" % (word, prob)
                          for word, prob in clues
                          if (word[0] == '*' or
-                             prob <= SHOWCLUE or prob >= 1.0 - SHOWCLUE)])
+                             prob <= options.clue_mailheader_cutoff or
+                             prob >= 1.0 - options.clue_mailheader_cutoff)])
 
     def score(self, msg, evidence=False):
         """Score (judge) a message.

@@ -4,7 +4,7 @@
 
 Classes:
     PickledClassifier - Classifier that uses a pickle db
-    DBDictClassifier - Classifier that uses a DBDict db
+    DBDictClassifier - Classifier that uses a DBM db
     Trainer - Classifier training observer
     SpamTrainer - Trainer for spam
     HamTrainer - Trainer for ham
@@ -17,8 +17,8 @@ Abstract:
     datastore.  This database is relatively small, but slower than other
     databases.
 
-    DBDictClassifier is a Classifier class that uses a DBDict
-    datastore.
+    DBDictClassifier is a Classifier class that uses a database
+    store.
 
     Trainer is concrete class that observes a Corpus and trains a
     Classifier object based upon movement of messages between corpora  When
@@ -49,8 +49,8 @@ all the spambayes contributors."
 import classifier
 from Options import options
 import cPickle as pickle
-import dbdict
 import errno
+import shelve
 
 PICKLE_TYPE = 1
 NO_UPDATEPROBS = False   # Probabilities will not be autoupdated with training
@@ -83,10 +83,11 @@ class PickledClassifier(classifier.Classifier):
             tempbayes = pickle.load(fp)
             fp.close()
 
+        # XXX: why not self.__setstate__(tempbayes.__getstate__())?
         if tempbayes:
             self.wordinfo = tempbayes.wordinfo
-            self.meta.nham = tempbayes.get_nham()
-            self.meta.nspam = tempbayes.get_nspam()
+            self.nham = tempbayes.nham
+            self.nspam = tempbayes.nspam
 
             if options.verbose:
                 print '%s is an existing pickle, with %d ham and %d spam' \
@@ -96,8 +97,8 @@ class PickledClassifier(classifier.Classifier):
             if options.verbose:
                 print self.db_name,'is a new pickle'
             self.wordinfo = {}
-            self.meta.nham = 0
-            self.meta.nspam = 0
+            self.nham = 0
+            self.nspam = 0
 
     def store(self):
         '''Store self as a pickle'''
@@ -109,59 +110,78 @@ class PickledClassifier(classifier.Classifier):
         pickle.dump(self, fp, PICKLE_TYPE)
         fp.close()
 
-    def __getstate__(self):
-        return PICKLE_TYPE, self.wordinfo, self.meta
-
-    def __setstate__(self, t):
-        if t[0] != PICKLE_TYPE:
-            raise ValueError("Can't unpickle -- version %s unknown" % t[0])
-        self.wordinfo, self.meta = t[1:]
-
 
 class DBDictClassifier(classifier.Classifier):
-    '''Classifier object persisted in a WIDict'''
+    '''Classifier object persisted in a caching database'''
 
     def __init__(self, db_name, mode='c'):
         '''Constructor(database name)'''
 
         classifier.Classifier.__init__(self)
+        self.wordcache = {}
         self.statekey = "saved state"
         self.mode = mode
         self.db_name = db_name
         self.load()
 
     def load(self):
-        '''Load state from WIDict'''
+        '''Load state from database'''
 
         if options.verbose:
-            print 'Loading state from',self.db_name,'WIDict'
+            print 'Loading state from',self.db_name,'database'
 
-        self.wordinfo = dbdict.DBDict(self.db_name, self.mode,
-                             classifier.WordInfo,iterskip=[self.statekey])
+        self.db = shelve.DbfilenameShelf(self.db_name, self.mode)
 
-        if self.wordinfo.has_key(self.statekey):
-            (nham, nspam) = self.wordinfo[self.statekey]
-            self.set_nham(nham)
-            self.set_nspam(nspam)
+        if self.db.has_key(self.statekey):
+            t = self.db[self.statekey]
+            if t[0] != classifier.PICKLE_VERSION:
+                raise ValueError("Can't unpickle -- version %s unknown" % t[0])
+            (self.nspam, self.nham) = t[1:]
 
             if options.verbose:
-                print '%s is an existing DBDict, with %d ham and %d spam' \
-                      % (self.db_name, self.nham, self.nspam)
+                print '%s is an existing database, with %d spam and %d ham' \
+                      % (self.db_name, self.nspam, self.nham)
         else:
-            # new dbdict
+            # new database
             if options.verbose:
-                print self.db_name,'is a new DBDict'
-            self.set_nham(0)
-            self.set_nspam(0)
+                print self.db_name,'is a new database'
+            self.nspam = 0
+            self.nham = 0
+        self.wordinfo = {}
 
     def store(self):
         '''Place state into persistent store'''
 
         if options.verbose:
-            print 'Persisting',self.db_name,'state in WIDict'
+            print 'Persisting',self.db_name,'state in database'
 
-        self.wordinfo[self.statekey] = (self.get_nham(), self.get_nspam())
-        self.wordinfo.sync()
+        for key, val in self.wordinfo.iteritems():
+            if val == None:
+                del self.wordinfo[key]
+                try:
+                    del self.db[key]
+                except KeyError:
+                    pass
+            else:
+                self.db[key] = val.__getstate__()
+        self.db[self.statekey] = (classifier.PICKLE_VERSION,
+                                  self.nspam, self.nham)
+        self.db.sync()
+
+    def _wordinfoget(self, word):
+        ret = self.wordinfo.get(word)
+        if not ret:
+            r = self.db.get(word)
+            if r:
+                ret = self.WordInfoClass()
+                ret.__setstate__(r)
+                self.wordinfo[word] = ret
+        return ret
+
+    # _wordinfoset is the same
+
+    def _wordinfodel(self, word):
+        self.wordinfo[word] = None
 
 
 class Trainer:

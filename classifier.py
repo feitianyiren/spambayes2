@@ -46,31 +46,7 @@ except NameError:
 
 LN2 = math.log(2)       # used frequently by chi-combining
 
-PICKLE_VERSION = 4
-
-class MetaInfo(object):
-    """Information about the corpora.
-
-    Contains nham and nspam, used for calculating probabilities.
-
-    """
-    def __init__(self):
-        self.__setstate__((PICKLE_VERSION, 0, 0))
-
-    def __repr__(self):
-        return "MetaInfo%r" % repr((self._nspam,
-                                    self._nham,
-                                    self.revision))
-
-    def __getstate__(self):
-        return (PICKLE_VERSION, self.nspam, self.nham)
-
-    def __setstate__(self, t):
-        if t[0] != PICKLE_VERSION:
-            raise ValueError("Can't unpickle -- version %s unknown" % t[0])
-        self.nspam, self.nham = t[1:]
-        self.revision = 0
-
+PICKLE_VERSION = 5
 
 class WordInfo(object):
     # Invariant:  For use in a classifier database, at least one of
@@ -108,31 +84,17 @@ class Classifier:
 
     def __init__(self):
         self.wordinfo = {}
-        self.meta = MetaInfo()
         self.probcache = {}
+        self.nspam = self.nham = 0
 
     def __getstate__(self):
-        return PICKLE_VERSION, self.wordinfo, self.meta
+        return (PICKLE_VERSION, self.wordinfo, self.nspam, self.nham)
 
     def __setstate__(self, t):
         if t[0] != PICKLE_VERSION:
             raise ValueError("Can't unpickle -- version %s unknown" % t[0])
-        self.wordinfo, self.meta = t[1:]
+        (self.wordinfo, self.nspam, self.nham) = t[1:]
         self.probcache = {}
-
-    # Slacker's way out--pass calls to nham/nspam up to the meta class
-
-    def get_nham(self):
-        return self.meta.nham
-    def set_nham(self, val):
-        self.meta.nham = val
-    nham = property(get_nham, set_nham)
-
-    def get_nspam(self):
-        return self.meta.nspam
-    def set_nspam(self, val):
-        self.meta.nspam = val
-    nspam = property(get_nspam, set_nspam)
 
     # spamprob() implementations.  One of the following is aliased to
     # spamprob, depending on option settings.
@@ -330,8 +292,8 @@ class Classifier:
         except KeyError:
             pass
 
-        nham = float(self.meta.nham or 1)
-        nspam = float(self.meta.nspam or 1)
+        nham = float(self.nham or 1)
+        nspam = float(self.nspam or 1)
 
         assert hamcount <= nham
         hamratio = hamcount / nham
@@ -419,14 +381,12 @@ class Classifier:
     def _add_msg(self, wordstream, is_spam):
         self.probcache = {}    # nuke the prob cache
         if is_spam:
-            self.meta.nspam += 1
+            self.nspam += 1
         else:
-            self.meta.nham += 1
+            self.nham += 1
 
-        wordinfo = self.wordinfo
-        wordinfoget = wordinfo.get
         for word in Set(wordstream):
-            record = wordinfoget(word)
+            record = self._wordinfoget(word)
             if record is None:
                 record = self.WordInfoClass()
 
@@ -435,25 +395,22 @@ class Classifier:
             else:
                 record.hamcount += 1
 
-            # Needed to tell a persistent DB that the content changed.
-            wordinfo[word] = record
+            self._wordinfoset(word, record)
 
 
     def _remove_msg(self, wordstream, is_spam):
         self.probcache = {}    # nuke the prob cache
         if is_spam:
-            if self.meta.nspam <= 0:
+            if self.nspam <= 0:
                 raise ValueError("spam count would go negative!")
-            self.meta.nspam -= 1
+            self.nspam -= 1
         else:
-            if self.meta.nham <= 0:
+            if self.nham <= 0:
                 raise ValueError("non-spam count would go negative!")
-            self.meta.nham -= -1
+            self.nham -= -1
 
-        wordinfo = self.wordinfo
-        wordinfoget = wordinfo.get
         for word in Set(wordstream):
-            record = wordinfoget(word)
+            record = self._wordinfoget(word)
             if record is not None:
                 if is_spam:
                     if record.spamcount > 0:
@@ -462,11 +419,9 @@ class Classifier:
                     if record.hamcount > 0:
                         record.hamcount -= 1
                 if record.hamcount == 0 == record.spamcount:
-                    del wordinfo[word]
+                    self._wordinfodel(word)
                 else:
-                    # Needed to tell a persistent DB that the content
-                    # changed.
-                    wordinfo[word] = record
+                    self._wordinfoset(word, record)
 
     def _getclues(self, wordstream):
         mindist = options.minimum_prob_strength
@@ -475,9 +430,8 @@ class Classifier:
         clues = []  # (distance, prob, word, record) tuples
         pushclue = clues.append
 
-        wordinfoget = self.wordinfo.get
         for word in Set(wordstream):
-            record = wordinfoget(word)
+            record = self._wordinfoget(word)
             if record is None:
                 prob = unknown
             else:
@@ -491,6 +445,16 @@ class Classifier:
             del clues[0 : -options.max_discriminators]
         # Return (prob, word, record).
         return [t[1:] for t in clues]
+
+    def _wordinfoget(self, word):
+        return self.wordinfo.get(word)
+
+    def _wordinfoset(self, word, record):
+        self.wordinfo[word] = record
+
+    def _wordinfodel(self, word):
+        del self.wordinfo[word]
+        
 
 
 Bayes = Classifier
