@@ -50,10 +50,10 @@ One day, if I have enough time, I'll go back and re-do all the plots
 using a single fixed data set.</p> 
 <p><img src="images/graham_graph.png"/></p>
 <p>In this plot, you can see that most of the spam gets scores near to
-1, while most of the ham gets scores near to zero. This is all good. 
+100, while most of the ham gets scores near to 0. This is all good. 
 Unfortunately, there's also a significant number of hams that score
-close to 1, and spams close to 0 - which means the system is not just scoring
-them wrong, but it's completely confident in it's (wrong) score.
+close to 100, and spams close to 0 - which means the system is not just scoring
+them wrong, but it's completely confident in its (wrong) score. (Note that the difference isn't as apparent as it could be - it's a logarithmic scale graph!)
 </p>
 <p class="todo">Add more here - cancellation disease, fudge factors, &c</p>
 
