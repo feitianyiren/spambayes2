@@ -369,6 +369,9 @@ pop3proxy_port: 110
 [html_ui]
 html_ui_port: 8880
 html_ui_launch_browser: False
+
+[globals]
+verbose: False
 """
 
 int_cracker = ('getint', None)
@@ -455,6 +458,8 @@ all_options = {
                   },
     'html_ui': {'html_ui_port': int_cracker,
                 'html_ui_launch_browser': boolean_cracker,
+                },
+    'globals': {'verbose': boolean_cracker,
                 },
 }
 

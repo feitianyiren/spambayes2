@@ -55,7 +55,6 @@ import errno
 PICKLE_TYPE = 1
 NO_UPDATEPROBS = False   # Probabilities will not be autoupdated with training
 UPDATEPROBS = True       # Probabilities will be autoupdated with training
-DEBUG = False
 
 class PickledClassifier(classifier.Classifier):
     '''Classifier object persisted in a pickle'''
@@ -72,7 +71,7 @@ class PickledClassifier(classifier.Classifier):
         # this object's state is copied.  This is a nuance of the way
         # that pickle does its job
 
-        if DEBUG:
+        if options.verbose:
             print 'Loading state from',self.db_name,'pickle'
 
         tempbayes = None
@@ -89,12 +88,12 @@ class PickledClassifier(classifier.Classifier):
             self.meta.nham = tempbayes.get_nham()
             self.meta.nspam = tempbayes.get_nspam()
 
-            if DEBUG:
+            if options.verbose:
                 print '%s is an existing pickle, with %d ham and %d spam' \
                       % (self.db_name, self.nham, self.nspam)
         else:
             # new pickle
-            if DEBUG:
+            if options.verbose:
                 print self.db_name,'is a new pickle'
             self.wordinfo = {}
             self.meta.nham = 0
@@ -103,7 +102,7 @@ class PickledClassifier(classifier.Classifier):
     def store(self):
         '''Store self as a pickle'''
 
-        if DEBUG:
+        if options.verbose:
             print 'Persisting',self.db_name,'as a pickle'
 
         fp = open(self.db_name, 'wb')
@@ -134,7 +133,7 @@ class DBDictClassifier(classifier.Classifier):
     def load(self):
         '''Load state from WIDict'''
 
-        if DEBUG:
+        if options.verbose:
             print 'Loading state from',self.db_name,'WIDict'
 
         self.wordinfo = dbdict.DBDict(self.db_name, self.mode,
@@ -145,12 +144,12 @@ class DBDictClassifier(classifier.Classifier):
             self.set_nham(nham)
             self.set_nspam(nspam)
 
-            if DEBUG:
+            if options.verbose:
                 print '%s is an existing DBDict, with %d ham and %d spam' \
                       % (self.db_name, self.nham, self.nspam)
         else:
             # new dbdict
-            if DEBUG:
+            if options.verbose:
                 print self.db_name,'is a new DBDict'
             self.set_nham(0)
             self.set_nspam(0)
@@ -158,7 +157,7 @@ class DBDictClassifier(classifier.Classifier):
     def store(self):
         '''Place state into persistent store'''
 
-        if DEBUG:
+        if options.verbose:
             print 'Persisting',self.db_name,'state in WIDict'
 
         self.wordinfo[self.statekey] = (self.get_nham(), self.get_nspam())
@@ -184,7 +183,7 @@ class Trainer:
     def train(self, message):
         '''Train the database with the message'''
 
-        if DEBUG:
+        if options.verbose:
             print 'training with',message.key()
 
         self.bayes.learn(message.tokenize(), self.is_spam)
@@ -198,7 +197,7 @@ class Trainer:
     def untrain(self, message):
         '''Untrain the database with the message'''
 
-        if DEBUG:
+        if options.verbose:
             print 'untraining with',message.key()
 
         self.bayes.unlearn(message.tokenize(), self.is_spam)

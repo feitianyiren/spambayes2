@@ -87,6 +87,7 @@ from __future__ import generators
 import Corpus
 import storage
 import sys, os, gzip, fnmatch, getopt, errno, time, stat
+from Options import options
 
 class FileCorpus(Corpus.Corpus):
 
@@ -132,7 +133,7 @@ filter'''
         if not fnmatch.fnmatch(message.key(), self.filter):
             raise ValueError
 
-        if Corpus.Verbose:
+        if options.verbose:
             print 'adding',message.key(),'to corpus'
 
         message.directory = self.directory
@@ -144,7 +145,7 @@ filter'''
     def removeMessage(self, message):
         '''Remove a Message from this corpus'''
 
-        if Corpus.Verbose:
+        if options.verbose:
             print 'removing',message.key(),'from corpus'
 
         message.remove()
@@ -162,7 +163,7 @@ filter'''
         else:
             s = ''
 
-        if Corpus.Verbose and nummsgs > 0:
+        if options.verbose and nummsgs > 0:
             lst = ', ' + '%s' % (self.keys())
         else:
             lst = ''
@@ -204,7 +205,7 @@ class FileMessage(Corpus.Message):
     def load(self):
         '''Read the Message substance from the file'''
 
-        if Corpus.Verbose:
+        if options.verbose:
             print 'loading', self.file_name
 
         pn = self.pathname()
@@ -220,7 +221,7 @@ class FileMessage(Corpus.Message):
     def store(self):
         '''Write the Message substance to the file'''
 
-        if Corpus.Verbose:
+        if options.verbose:
             print 'storing', self.file_name
 
         pn = self.pathname()
@@ -231,7 +232,7 @@ class FileMessage(Corpus.Message):
     def remove(self):
         '''Message hara-kiri'''
 
-        if Corpus.Verbose:
+        if options.verbose:
             print 'physically deleting file',self.pathname()
 
         os.unlink(self.pathname())
@@ -250,7 +251,7 @@ class FileMessage(Corpus.Message):
         elip = ''
         sub = self.getSubstance()
         
-        if Corpus.Verbose:
+        if options.verbose:
             sub = self.getSubstance()
         else:
             if len(sub) > 20:
@@ -293,7 +294,7 @@ class GzipFileMessage(FileMessage):
     def load(self):
         '''Read the Message substance from the file'''
 
-        if Corpus.Verbose:
+        if options.verbose:
             print 'loading', self.file_name
 
         pn = self.pathname()
@@ -311,7 +312,7 @@ class GzipFileMessage(FileMessage):
     def store(self):
         '''Write the Message substance to the file'''
 
-        if Corpus.Verbose:
+        if options.verbose:
             print 'storing', self.file_name
 
         pn = self.pathname()
@@ -444,17 +445,17 @@ We should not see MSG00003 in this iteration.'
     print '\n\nClassifying messages in unsure corpus'
 
     for msg in unsurecorpus:
-        type = classbayes.classify(msg)
+        prob = classbayes.spamprob(msg.tokenize())
 
-        print 'Message %s spam probability is %f' % (msg.key(), msg.spamprob)
+        print 'Message %s spam probability is %f' % (msg.key(), prob)
 
-        if type == 'ham':
+        if prob < options.ham_cutoff:
             print 'Moving %s from unsurecorpus to hamcorpus, \
-based on prob of %f' % (msg.key(), msg.spamprob)
+based on prob of %f' % (msg.key(), prob)
             hamcorpus.takeMessage(msg.key(), unsurecorpus)
-        elif type == 'spam':
+        elif prob > options.spam_cutoff:
             print 'Moving %s from unsurecorpus to spamcorpus, \
-based on prob of %f' % (msg.key(), msg.spamprob)
+based on prob of %f' % (msg.key(), prob)
             spamcorpus.takeMessage(msg.key(), unsurecorpus)
 
 
@@ -685,7 +686,7 @@ if __name__ == '__main__':
         print >>sys.stderr, str(msg) + '\n\n' + __doc__
         sys.exit()
 
-    Corpus.Verbose = False
+    options.verbose = False
     runTestServer = False
     setupTestServer = False
     cleanupTestServer = False
@@ -706,11 +707,13 @@ if __name__ == '__main__':
         elif opt == '-c':
             cleanupTestServer = True
         elif opt == '-v':
-            Corpus.Verbose = True
+            options.verbose = True
         elif opt == '-g':
             useGzip = True
         elif opt == '-u':
             useExistingDB = True
+        elif opt == '-v':
+            options.verbose = True
 
     if setupTestServer:
         setupTest(useGzip)

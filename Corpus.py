@@ -86,10 +86,10 @@ import sys           # for output of docstring
 import time
 import tokenizer
 import re
+from Options import options
 
 SPAM = True
 HAM = False
-Verbose = False
 
 class Corpus:
     '''An observable dictionary of Messages'''
@@ -114,7 +114,7 @@ class Corpus:
     def addMessage(self, message):
         '''Add a Message to this corpus'''
 
-        if Verbose:
+        if options.verbose:
             print 'adding message %s to corpus' % (message.key())
 
         self.cacheMessage(message)
@@ -133,7 +133,7 @@ class Corpus:
         '''Remove a Message from this corpus'''
 
         key = message.key()
-        if Verbose:
+        if options.verbose:
             print 'removing message %s from corpus' % (key)
         self.unCacheMessage(key)
         del self.msgs[key]
@@ -151,7 +151,7 @@ class Corpus:
 
         key = message.key()
 
-        if Verbose:
+        if options.verbose:
             print 'placing %s in corpus cache' % (key)
 
         self.msgs[key] = message
@@ -168,7 +168,7 @@ class Corpus:
         '''Remove a message from the in-memory cache'''
         # This method should probably not be overridden
 
-        if Verbose:
+        if options.verbose:
             print 'Flushing %s from corpus cache' % (key)
 
         try:
@@ -248,7 +248,7 @@ class ExpiryCorpus:
         if msg.createTimestamp() >= time.time() - self.expireBefore:
             Corpus.cacheMessage(self, msg)
         else:
-            if Verbose:
+            if options.verbose:
                 print 'Not caching %s because it has expired' % (msg.key())
             raise KeyError, msg
 
@@ -261,7 +261,7 @@ class ExpiryCorpus:
             try:
                 msg = self[key]
             except KeyError, e:
-                if Verbose:
+                if options.verbose:
                     print 'message %s has expired' % (key)
                 self.removeMessage(e[0])
 
