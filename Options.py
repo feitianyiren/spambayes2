@@ -306,13 +306,13 @@ experimental_ham_spam_imbalance_adjustment: False
 [Hammie]
 # The name of the header that hammie adds to an E-mail in filter mode
 # It contains the "classification" of the mail, plus the score.
-hammie_header_name: X-Hammie-Disposition
+hammie_header_name: X-Spambayes-Classification
 
 # The three disposition names are added to the header as the following
 # Three words:
-header_spam_string: Yes
-header_unsure_string: Unsure
-header_ham_string: No
+header_spam_string: spam
+header_ham_string: ham
+header_unsure_string: unsure
 
 # Accuracy of the score in the header in decimal digits
 header_score_digits: 2
