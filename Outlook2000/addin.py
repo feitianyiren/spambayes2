@@ -406,8 +406,6 @@ class ExplorerWithEvents:
                         constants.msoControlButton,
                         ButtonRecoverFromSpamEvent, (self.manager, self),
                         Tag = "SpamBayes.RecoverFromSpam")
-        # Prime our event handler.
-        self.OnFolderSwitch()
 
         # The main tool-bar dropdown with all our entries.
         # Add a pop-up menu to the toolbar
@@ -511,6 +509,8 @@ class ExplorerWithEvents:
         # See comments for OnNewExplorer below.
         if not self.have_setup_ui:
             self.SetupUI()
+            # Prime the button views.
+            self.OnFolderSwitch()
 
     def OnClose(self):
         self.explorer_list.remove(self)
@@ -523,12 +523,21 @@ class ExplorerWithEvents:
         self.close() # disconnect events.
 
     def OnFolderSwitch(self):
+        # Yet another worm-around for our event timing woes.  This may
+        # be the first event ever seen for this explorer if, eg,
+        # "Outlook Today" is the initial Outlook view.
+        if not self.have_setup_ui:
+            self.SetupUI()
         # Work out what folder we are in.
         outlook_folder = self.CurrentFolder
-        show_delete_as = True
-        show_recover_as = False
-        try:
-            if outlook_folder is not None:
+        if outlook_folder is None or \
+           outlook_folder.DefaultItemType != constants.olMailItem:
+            show_delete_as = False
+            show_recover_as = False
+        else:
+            show_delete_as = True
+            show_recover_as = False
+            try:
                 mapi_folder = self.manager.message_store.GetFolder(outlook_folder)
                 look_id = self.manager.config.filter.spam_folder_id
                 if look_id:
@@ -544,10 +553,10 @@ class ExplorerWithEvents:
                     if mapi_folder == look_folder:
                         show_recover_as = True
                         show_delete_as = True
-        except:
-            print "Error finding the MAPI folders for a folder switch event"
-            import traceback
-            traceback.print_exc()
+            except:
+                print "Error finding the MAPI folders for a folder switch event"
+                import traceback
+                traceback.print_exc()
         self.but_recover_as.Visible = show_recover_as
         self.but_delete_as.Visible = show_delete_as
 
@@ -572,6 +581,11 @@ class ExplorersEvent:
         # that OnNewExplorer is too early to access the CommandBars
         # etc elements. We hack around this by putting the logic in
         # the first OnActivate call of the explorer itself.
+        # Except that doesn't always work either - sometimes
+        # OnActivate will cause a crash when selecting "Open in New Window",
+        # so we tried OnSelectionChanges, which works OK until there is a
+        # view with no items (eg, Outlook Today) - so at the end of the
+        # day, we can never assume we have been initialized!
         self._DoNewExplorer(explorer, False)
 
 # The outlook Plugin COM object itself.
