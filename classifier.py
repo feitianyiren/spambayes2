@@ -157,22 +157,6 @@ class Classifier:
     # spamprob() implementations.  One of the following is aliased to
     # spamprob, depending on option settings.
 
-    def classify(self, message):
-        """Return the classification of a message as a string."""
-
-        prob = self.spamprob(message.tokenize())
-
-        message.setSpamprob(prob)       # don't like this
-
-        if prob < options.ham_cutoff:
-            type = options.header_ham_string
-        elif prob > options.spam_cutoff:
-            type = options.header_spam_string
-        else:
-            type = options.header_unsure_string
-
-        return type
-
     def gary_spamprob(self, wordstream, evidence=False):
         """Return best-guess probability that wordstream is spam.
 
