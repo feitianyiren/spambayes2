@@ -151,7 +151,7 @@ def ProcessMessage(msgstore_message, manager):
 
 # Button/Menu and other UI event handler classes
 class ButtonEvent:
-    def Init(self, handler, args = ()):
+    def Init(self, handler, *args):
         self.handler = handler
         self.args = args
     def Close(self):
@@ -392,41 +392,37 @@ class ExplorerWithEvents:
         self.explorer_list = explorer_list
 
     def SetupUI(self):
-        application = self.Application
         manager = self.manager
         self.buttons = []
         activeExplorer = self
         bars = activeExplorer.CommandBars
         toolbar = bars.Item("Standard")
         # Add our "Delete as ..." and "Recover as" buttons
-        self.but_delete_as = button = toolbar.Controls.Add(
-                                Type=constants.msoControlButton,
-                                Temporary=True)
-        # Hook events for the item
-        button.BeginGroup = True
-        button = DispatchWithEvents(button, ButtonDeleteAsSpamEvent)
-        button.Init(self.manager, self)
-        self.buttons.append(button)
+        self.but_delete_as = self._AddControl(
+                        toolbar,
+                        constants.msoControlButton,
+                        ButtonDeleteAsSpamEvent, (self.manager, self),
+                        BeginGroup = True,
+                        Tag = "SpamBayes.DeleteAsSpam")
         # And again for "Recover as"
-        self.but_recover_as = button = toolbar.Controls.Add(
-                                Type=constants.msoControlButton,
-                                Temporary=True)
-        button = DispatchWithEvents(button, ButtonRecoverFromSpamEvent)
-        self.buttons.append(button)
-        # Hook our explorer events, and pass the buttons.
-        button.Init(self.manager, self)
-
-        # And prime our event handler.
+        self.but_recover_as = self._AddControl(
+                        toolbar,
+                        constants.msoControlButton,
+                        ButtonRecoverFromSpamEvent, (self.manager, self),
+                        Tag = "SpamBayes.RecoverFromSpam")
+        # Prime our event handler.
         self.OnFolderSwitch()
 
         # The main tool-bar dropdown with all our entries.
         # Add a pop-up menu to the toolbar
-        popup = toolbar.Controls.Add(
-                            Type=constants.msoControlPopup,
-                            Temporary=True)
-        popup.Caption="Anti-Spam"
-        popup.TooltipText = "Anti-Spam filters and functions"
-        popup.Enabled = True
+        popup = self._AddControl(
+                        toolbar,
+                        constants.msoControlPopup,
+                        None, None,
+                        Caption="Anti-Spam",
+                        TooltipText = "Anti-Spam filters and functions",
+                        Enabled = True,
+                        Tag = "SpamBayes.Popup")
         # Convert from "CommandBarItem" to derived
         # "CommandBarPopup" Not sure if we should be able to work
         # this out ourselves, but no introspection I tried seemed
@@ -434,28 +430,56 @@ class ExplorerWithEvents:
         # declarations.
         popup = CastTo(popup, "CommandBarPopup")
         # And add our children.
-        self._AddPopup(popup, manager.ShowManager, (),
+        self._AddControl(popup,
+                       constants.msoControlButton,
+                       ButtonEvent, (manager.ShowManager,),
                        Caption="Anti-Spam Manager...",
                        TooltipText = "Show the Anti-Spam manager dialog.",
-                       Enabled = True)
-        self._AddPopup(popup, ShowClues, (self.manager, self),
+                       Enabled = True,
+                       Tag = "SpamBayes.Manager")
+        self._AddControl(popup,
+                       constants.msoControlButton,
+                       ButtonEvent, (ShowClues, self.manager, self),
                        Caption="Show spam clues for current message",
-                       Enabled=True)
+                       Enabled=True,
+                       Tag = "SpamBayes.Clues")
         # If we are running from Python sources, enable a few extra items
         if not hasattr(sys, "frozen"):
-            self._AddPopup(popup, Tester, (self.manager,),
+            self._AddControl(popup,
+                           constants.msoControlButton,
+                           ButtonEvent, (Tester, self.manager),
                            Caption="Execute test suite",
-                           Enabled=True)
+                           Enabled=True,
+                           Tag = "SpamBayes.TestSuite")
         self.have_setup_ui = True
 
-    def _AddPopup(self, parent, target, target_args, **item_attrs):
-        item = parent.Controls.Add(Type=constants.msoControlButton, Temporary=True)
+    def _AddControl(self,
+                    parent, # who the control is added to
+                    control_type, # type of control to add.
+                    events_class, events_init_args, # class/Init() args
+                    **item_attrs): # extra control attributes.
+        # Sigh - sometimes our toolbar etc items will become
+        # permanent, even though we make them temporary.
+        # I found
+        # http://groups.google.com/groups?threadm=eKKmbvQvAHA.1808%40tkmsftngp02
+        # Maybe we should consider making them permanent - this would then
+        # allow the user to drag them around the toolbars and have them
+        # stick.  The downside is that should the user uninstall this addin
+        # there is no clean way to remove the buttons.  Do we even care?
+        assert item_attrs.has_key('Tag'), "Need a 'Tag' attribute!"
+        item = self.CommandBars.FindControl(
+                        Type = control_type,
+                        Tag = item_attrs['Tag'])
+        if item is None:
+            item = parent.Controls.Add(Type=control_type, Temporary=True)
         # Hook events for the item
-        item = DispatchWithEvents(item, ButtonEvent)
-        item.Init(target, target_args)
+        if events_class is not None:
+            item = DispatchWithEvents(item, events_class)
+            item.Init(*events_init_args)
         for attr, val in item_attrs.items():
             setattr(item, attr, val)
         self.buttons.append(item)
+        return item
 
     def GetSelectedMessages(self, allow_multi = True, explorer = None):
         if explorer is None:
@@ -489,7 +513,9 @@ class ExplorerWithEvents:
         self.explorer_list.remove(self)
         self.explorer_list = None
         for button in self.buttons:
-            button.Close()
+            closer = getattr(button, "Close", None)
+            if closer is not None:
+                closer()
         self.buttons = []
         self.close() # disconnect events.
 
