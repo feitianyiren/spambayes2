@@ -4,7 +4,7 @@
 
 Classes:
     PickledClassifier - Classifier that uses a pickle db
-    DBDictClassifier - Classifier that uses a DBM db
+    DBDictClassifier - Classifier that uses a shelve db
     Trainer - Classifier training observer
     SpamTrainer - Trainer for spam
     HamTrainer - Trainer for ham
@@ -42,9 +42,9 @@ To Do:
 # The Python Software Foundation and is covered by the Python Software
 # Foundation license.
 
-__author__ = "Tim Stone <tim@fourstonesExpressions.com>"
-__credits__ = "Richie Hindle, Tim Peters, Neale Pickett, \
-all the spambayes contributors."
+__author__ = "Neale Pickett <neale@woozle.org>, \
+Tim Stone <tim@fourstonesExpressions.com>"
+__credits__ = "All the spambayes contributors."
 
 import classifier
 from Options import options
