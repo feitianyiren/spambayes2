@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-'''FileCorpus.py - Corpus composed of file system artifacts
+"""FileCorpus.py - Corpus composed of file system artifacts
 
 Classes:
     FileCorpus - an observable dictionary of FileMessages
@@ -73,7 +73,7 @@ Test harness:
 To Do:
     o Suggestions?
 
-'''
+"""
 
 # This module is part of the spambayes project, which is Copyright 2002
 # The Python Software Foundation and is covered by the Python Software
@@ -571,7 +571,7 @@ def setupTest(useGzip):
 
 def testmsg1():
 
-    return '''
+    return """
 X-Hd:skip@pobox.com Mon Nov 04 10:50:49 2002
 Received:by mail.powweb.com (mbox timstone) (with Cubic Circle's cucipop (v1.31
 1998/05/13) Mon Nov 4 08:50:58 2002)
@@ -625,10 +625,10 @@ X-Hammie- Disposition:Unsure
 >
 >
 - Tim
-www.fourstonesExpressions.com '''
+www.fourstonesExpressions.com """
 
 def testmsg2():
-    return '''
+    return """
 X-Hd:richie@entrian.com Wed Nov 06 12:05:41 2002
 Received:by mail.powweb.com (mbox timstone) (with Cubic Circle's cucipop (v1.31
 1998/05/13) Wed Nov 6 10:05:45 2002)
@@ -676,7 +676,7 @@ see what I mean?
 
 --
 Richie Hindle
-richie@entrian.com'''
+richie@entrian.com"""
 
 if __name__ == '__main__':
 
