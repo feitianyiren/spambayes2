@@ -142,6 +142,7 @@ def main():
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage(0)
+            sys.exit(0)
         elif opt in ('-x', '--examples'):
             examples()
         elif opt == '-d':
