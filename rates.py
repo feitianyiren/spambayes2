@@ -81,7 +81,7 @@ def doit(basename):
 
         #  0      1 2   3     4         5
         # -> <stat> 1 new false positives
-        if fields[3] == 'new' and fields[4] == 'false':
+        if len(fields) >= 5 and fields[3] == 'new' and fields[4] == 'false':
             kind = fields[-1]
             count = int(fields[2])
             if kind == 'positives':
