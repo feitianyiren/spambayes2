@@ -156,7 +156,7 @@ class FolderSelector(dialog.Dialog):
 
         self.select_desc_noun = desc_noun
         self.select_desc_noun_suffix = desc_noun_suffix
-        self.selected_ids = selected_ids
+        self.selected_ids = [sid for sid in selected_ids if sid is not None]
         self.manager = manager
         self.checkbox_state = checkbox_state
         self.checkbox_text = checkbox_text or "Include &subfolders"
