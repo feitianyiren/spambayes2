@@ -52,8 +52,6 @@ todo = """
 
 Web training interface:
 
- o Include more stats in the Status box - it's easy to lose track of
-   where you are when testing.
  o Functional tests.
  o Review already-trained messages, and purge them.
  o Put in a link to view a message (plain text, html, multipart...?)
@@ -79,8 +77,6 @@ New features:
    classified, etc."
  o Possibly integrate Tim Stone's SMTP code - make it use async, make
    the training code update (rather than replace!) the database.
- o Option to keep trained messages and view potential FPs and FNs to
-   correct them.
  o Allow use of the UI without the POP3 proxy.
  o Remove any existing X-Hammie-Disposition header from incoming emails.
  o Whitelist.
@@ -106,11 +102,12 @@ Gimmicks:
 
  o Classify a web page given a URL.
  o Graphs.  Of something.  Who cares what?
+ o NNTP proxy.
  o Zoe...!
 
 """
 
-import os, sys, re, operator, errno, getopt, cPickle, cStringIO, time, bisect
+import os, sys, re, operator, errno, getopt, string, cStringIO, time, bisect
 import socket, asyncore, asynchat, cgi, urlparse, webbrowser
 import Bayes, tokenizer, mboxutils
 from FileCorpus import FileCorpus, FileMessageFactory, GzipFileMessageFactory
@@ -476,7 +473,7 @@ class BayesProxy(POP3ProxyBase):
             if command == 'RETR' and not state.isTest:
                 # The message name is the time it arrived, with a uniquifier
                 # appended if two arrive within one clock tick of each other.
-                messageName = "%10.10d" % time.time()
+                messageName = "%10.10d" % long(time.time())
                 if messageName == state.lastBaseMessageName:
                     state.lastBaseMessageName = messageName
                     messageName = "%s-%d" % (messageName, state.uniquifier)
@@ -602,12 +599,17 @@ class UserInterface(BrighterAsyncChat):
                   <tr><td class='sectionbody'>%s</td></tr></table>
                   &nbsp;<br>\n"""
 
-    summary = """POP3 proxy running on port <b>%(proxyPort)d</b>,
-              proxying to <b>%(serverName)s:%(serverPort)d</b>.<br>
+    summary = """POP3 proxy running on <b>%(proxyPortsString)s</b>,
+              proxying to <b>%(serversString)s</b>.<br>
               Active POP3 conversations: <b>%(activeSessions)d</b>.<br>
               POP3 conversations this session: <b>%(totalSessions)d</b>.<br>
               Emails classified this session: <b>%(numSpams)d</b> spam,
-                <b>%(numHams)d</b> ham, <b>%(numUnsure)d</b> unsure.
+                <b>%(numHams)d</b> ham, <b>%(numUnsure)d</b> unsure.<br>
+              Total emails trained: Spam: <b>%(nspam)d</b>
+                                     Ham: <b>%(nham)d</b><br>
+              <form action='save' method='POST'>
+              <input type='submit' value='Save database'>
+              </form>
               """
 
     wordQuery = """<form action='wordquery'>
@@ -619,11 +621,11 @@ class UserInterface(BrighterAsyncChat):
              You can train the classifier based on those messages
              using the <a href='review'>Review messages</a> page."""
 
-    reviewHeader = """<p>These are unclassified emails, which you can use to
-                   train the classifier.  Check the Discard / Ham / Spam
-                   buttton for each email, then click 'Train' below.  (To
-                   discard the whole page, leave everything with Discard
-                   checked and click 'Train'.)</p>
+    reviewHeader = """<p>These are untrained emails, which you can use to
+                   train the classifier.  Check the Discard / Defer / Ham /
+                   Spam buttton for each email, then click 'Train' below.
+                   (Defer leaves the message here, to be trained on
+                   later.)</p>
                    <form action='review' method='GET'>
                        <input type='hidden' name='prior' value='%d'>
                        <input type='hidden' name='next' value='%d'>
@@ -638,8 +640,11 @@ class UserInterface(BrighterAsyncChat):
                    &nbsp;
                    <form action='review' method='POST'>
                    <table class='messagetable' cellpadding='0' cellspacing='0'>
-                   <tr><td><b>Subject:</b></td><td><b>From:</b></td>
-                   <td><b>Discard / Ham / Spam</b></td></tr>"""
+                   """
+
+    reviewSubheader = """<tr><td><b>Messages classified as %s:</b></td>
+                          <td><b>From:</b></td>
+                          <td><b>Discard / Defer / Ham / Spam</b></td></tr>"""
 
     upload = """<form action='%s' method='POST'
                 enctype='multipart/form-data'>
@@ -768,7 +773,7 @@ class UserInterface(BrighterAsyncChat):
         else:
             homeLink = "<a href='home'>Home</a> > %s" % name
         if showImage:
-            image = "<img src='/helmet.gif' align='absmiddle'>&nbsp;"
+            image = "<img src='helmet.gif' align='absmiddle'>&nbsp;"
         else:
             image = ""
         self.push(self.bodyStart % (image, homeLink))
@@ -795,20 +800,30 @@ class UserInterface(BrighterAsyncChat):
 
     def onHome(self, params):
         """Serve up the homepage."""
-        body = (self.pageSection % ('Status', self.summary % state.__dict__)+
+        stateDict = state.__dict__
+        stateDict.update(state.bayes.__dict__)
+        body = (self.pageSection % ('Status', self.summary % stateDict)+
                 self.pageSection % ('Train on proxied messages', self.review)+
                 self.pageSection % ('Train on a given message', self.train)+
                 self.pageSection % ('Classify a message', self.classify)+
                 self.pageSection % ('Word query', self.wordQuery))
         self.push(body)
 
+    def doSave(self):
+        """Saves the database.  Worker for onSave and onShutdown."""
+        self.push("<b>Saving... ")
+        self.push(' ')
+        state.bayes.store()
+        self.push("Done</b>.")
+
+    def onSave(self, params):
+        """Command handler for "Save"."""
+        self.doSave()
+
     def onShutdown(self, params):
         """Shutdown the server, saving the pickle if requested to do so."""
         if params['how'].lower().find('save') >= 0:
-            if not state.useDB and state.databaseFilename:
-                self.push("<b>Saving...</b>")
-                self.push(' ')  # Acts as a flush for small buffers.
-                state.bayes.store()
+            self.doSave()
         self.push("<b>Shutdown</b>. Goodbye.</div></body></html>")
         self.push(' ')
         self.shutdown(2)
@@ -844,7 +859,7 @@ class UserInterface(BrighterAsyncChat):
         """Given a message key (as seen in a Corpus), returns the timestamp
         for that message.  This is the time that the message was received,
         not the Date header."""
-        return int(key[:10])
+        return long(key[:10])
 
     def getTimeRange(self, timestamp):
         """Given a unix timestamp, returns a 3-tuple: the start timestamp
@@ -878,8 +893,8 @@ class UserInterface(BrighterAsyncChat):
         start, end, date = self.getTimeRange(timestamp)
 
         # Find the subset of the keys within this range.
-        startKeyIndex = bisect.bisect(allKeys, "%d" % start)
-        endKeyIndex = bisect.bisect(allKeys, "%d" % end)
+        startKeyIndex = bisect.bisect(allKeys, "%d" % long(start))
+        endKeyIndex = bisect.bisect(allKeys, "%d" % long(end))
         keys = allKeys[startKeyIndex:endKeyIndex]
         keys.reverse()
 
@@ -895,18 +910,39 @@ class UserInterface(BrighterAsyncChat):
         # Return the keys and their date.
         return keys, date, prior, start, end
 
+    def appendMessages(self, lines, keyedMessages, judgement):
+        """Appends the lines of a table of messages to 'lines'."""
+        buttons = """<input type='radio' name='classify:%s' value='discard'>
+                  <input type='radio' name='classify:%s' value='defer' %s>
+                  <input type='radio' name='classify:%s' value='ham' %s>
+                  <input type='radio' name='classify:%s' value='spam' %s>"""
+        stripe = 0
+        for key, message in keyedMessages:
+            # Parse the message and get the relevant headers.
+            subject = self.trimAndQuote(message["Subject"] or "(none)", 50)
+            from_ = self.trimAndQuote(message["From"] or "(none)", 40)
+
+            # Output the table row for this message.
+            defer = ham = spam = ""
+            if judgement == options.header_spam_string:
+                spam='checked'
+            elif judgement == options.header_ham_string:
+                ham='checked'
+            elif judgement == options.header_unsure_string:
+                defer='checked'
+            radioGroup = buttons % (key, key, defer, key, ham, key, spam)
+            stripeClass = ['stripe_on', 'stripe_off'][stripe]
+            lines.append("""<tr class='%s'><td>%s</td><td>%s</td>
+                            <td align='middle'>%s</td></tr>""" % \
+                            (stripeClass, subject, from_, radioGroup))
+            stripe = stripe ^ 1
+
     def onReview(self, params):
         """Present a list of message for (re)training."""
-
-        # This is the radio group for training/discarding.
-        trainRadio = """<input type='radio' name='classify:%s'
-                               value='discard' checked>
-                        <input type='radio' name='classify:%s' value='ham'>
-                        <input type='radio' name='classify:%s' value='spam'>"""
-
         # Train/discard sumbitted messages.
         id = ''
         numTrained = 0
+        numDeferred = 0
         for key, value in params.items():
             if key.startswith('classify:'):
                 id = key.split(':', 1)[1]
@@ -914,9 +950,15 @@ class UserInterface(BrighterAsyncChat):
                     targetCorpus = state.spamCorpus
                 elif value == 'ham':
                     targetCorpus = state.hamCorpus
-                else: # Discard
+                elif value == 'discard':
                     targetCorpus = None
-                    state.unknownCorpus.removeMessage(state.unknownCorpus[id])
+                    try:
+                        state.unknownCorpus.removeMessage(state.unknownCorpus[id])
+                    except KeyError:
+                        pass  # Must be a reload.
+                else: # defer
+                    targetCorpus = None
+                    numDeferred += 1
                 if targetCorpus:
                     try:
                         targetCorpus.takeMessage(id, state.unknownCorpus)
@@ -938,10 +980,14 @@ class UserInterface(BrighterAsyncChat):
             state.bayes.update_probabilities()
             self.push("Done.</b></p>")
 
-        # After submitting a page, display the prior page or the next one.
-        # Derive the day of the submitted page from the ID of the last
-        # processed message.
-        if id:
+        # If any messages were deferred, show the same page again.
+        if numDeferred > 0:
+            start = self.keyToTimestamp(id)
+
+        # Else after submitting a whole page, display the prior page or the
+        # next one.  Derive the day of the submitted page from the ID of the
+        # last processed message.
+        elif id:
             start = self.keyToTimestamp(id)
             _, _, prior, _, next = self.buildReviewKeys(start)
             if prior:
@@ -959,8 +1005,21 @@ class UserInterface(BrighterAsyncChat):
         else:
             start = 0
 
-        # Present the list of messages in reverse order of appearance.
+        # Build the lists of messages: spams, hams and unsure.
         keys, date, prior, this, next = self.buildReviewKeys(start)
+        keyedMessages = {options.header_spam_string: [],
+                         options.header_ham_string: [],
+                         options.header_unsure_string: []}
+        for key in keys:
+            # Parse the message and get the judgement header.
+            cachedMessage = state.unknownCorpus[key]
+            message = mboxutils.get_message(cachedMessage.getSubstance())
+            judgement = message[options.hammie_header_name] or \
+                                            options.header_unsure_string
+            keyedMessages[judgement].append((key, message))
+
+        # Present the list of messages in their groups in reverse order of
+        # appearance.
         if keys:
             priorState = nextState = ""
             if not prior:
@@ -968,30 +1027,22 @@ class UserInterface(BrighterAsyncChat):
             if not next:
                 nextState = 'disabled'
             lines = [self.reviewHeader % (prior, next, priorState, nextState)]
-            stripe = 0
-            for key in keys:
-                # Parse the message and get the relevant headers.
-                cachedMessage = state.unknownCorpus[key]
-                message = mboxutils.get_message(cachedMessage.getSubstance())
-                subject = self.trimAndQuote(message["Subject"] or "(none)", 50)
-                from_ = self.trimAndQuote(message["From"] or "(none)", 40)
+            for header, type in ((options.header_spam_string, 'Spam'),
+                                 (options.header_ham_string, 'Ham'),
+                                 (options.header_unsure_string, 'Unsure')):
+                if keyedMessages[header]:
+                    lines.append("<tr><td>&nbsp;</td><td></td><td></td></tr>")
+                    lines.append(self.reviewSubheader % type)
+                    self.appendMessages(lines, keyedMessages[header], header)
 
-                # Output the table row for this message.
-                key = cachedMessage.key()
-                radioGroup = trainRadio % (key, key, key)
-                stripeClass = ['stripe_on', 'stripe_off'][stripe]
-                lines.append("""<tr class='%s'><td>%s</td><td>%s</td>
-                                <td align='middle'>%s</td></tr>""" % \
-                                (stripeClass, subject, from_, radioGroup))
-                stripe = stripe ^ 1
             lines.append("""<tr><td></td><td></td><td align='middle'>&nbsp;<br>
                             <input type='submit' value='Train'></td></tr>""")
             lines.append("</table></form>")
             content = "\n".join(lines)
-            title = "Unclassified messages received on %s" % date
+            title = "Untrained messages received on %s" % date
         else:
-            content = "<p>There are no unclassified messages to display.</p>"
-            title = "No unclassified messages"
+            content = "<p>There are no untrained messages to display.</p>"
+            title = "No untrained messages"
 
         self.push(self.pageSection % (title, content))
 
@@ -1046,10 +1097,39 @@ class State:
         # Open the log file.
         self.logFile = open('_pop3proxy.log', 'wb', 0)
 
-        # Load up the default settings from Option.py / bayescustomize.ini
-        self.proxyPort = options.pop3proxy_port
-        self.serverName = options.pop3proxy_server_name
-        self.serverPort = options.pop3proxy_server_port
+        # Load up the old proxy settings from Options.py / bayescustomize.ini
+        # and give warnings if they're present.   XXX Remove these soon.
+        if options.pop3proxy_port != 110 or \
+           options.pop3proxy_server_name != '' or \
+           options.pop3proxy_server_port != 110:
+            print "\n    pop3proxy_port, pop3proxy_server_name and"
+            print "    pop3proxy_server_port are deprecated!  Please use"
+            print "    pop3proxy_servers and pop3proxy_ports instead.\n"
+        self.servers = [(options.pop3proxy_server_name,
+                         options.pop3proxy_server_port)]
+        self.proxyPorts = [options.pop3proxy_port]
+
+        # Load the new proxy settings - these will override the old ones
+        # if both are present.
+        if options.pop3proxy_servers:
+            self.servers = []
+            for server in options.pop3proxy_servers.split(','):
+                server = server.strip()
+                if server.find(':') > -1:
+                    server, port = server.split(':', 1)
+                else:
+                    port = '110'
+                self.servers.append((server, int(port)))
+
+        if options.pop3proxy_ports:
+            splitPorts = options.pop3proxy_ports.split(',')
+            self.proxyPorts = map(int, map(string.strip, splitPorts))
+
+        if len(self.servers) != len(self.proxyPorts):
+            print "pop3proxy_servers & pop3proxy_ports are different lengths!"
+            sys.exit()
+
+        # Load up the other settings from Option.py / bayescustomize.ini
         self.databaseFilename = options.persistent_storage_file
         self.useDB = options.persistent_use_database
         self.uiPort = options.html_ui_port
@@ -1072,6 +1152,13 @@ class State:
         # Unique names for cached messages - see BayesProxy.onRetr
         self.lastBaseMessageName = ''
         self.uniquifier = 2
+
+    def buildServerStrings(self):
+        """After the server details have been set up, this creates string
+        versions of the details, for display in the Status panel."""
+        serverStrings = ["%s:%s" % (s, p) for s, p in self.servers]
+        self.serversString = ', '.join(serverStrings)
+        self.proxyPortsString = ', '.join(map(str, self.proxyPorts))
 
     def createWorkers(self):
         """Using the options that were initialised in __init__ and then
@@ -1116,11 +1203,11 @@ class State:
 state = State()
 
 
-def main(serverName, serverPort, proxyPort,
-         uiPort, launchUI, databaseFilename, useDB):
+def main(servers, proxyPorts, uiPort, launchUI):
     """Runs the proxy forever or until a 'KILL' command is received or
     someone hits Ctrl+Break."""
-    BayesProxyListener(serverName, serverPort, proxyPort)
+    for (server, serverPort), proxyPort in zip(servers, proxyPorts):
+        BayesProxyListener(server, serverPort, proxyPort)
     UserInterfaceListener(uiPort)
     if launchUI:
         webbrowser.open_new("http://localhost:%d/" % uiPort)
@@ -1381,7 +1468,7 @@ if __name__ == '__main__':
         elif opt == '-p':
             state.databaseFilename = arg
         elif opt == '-l':
-            state.proxyPort = int(arg)
+            state.proxyPorts = [int(arg)]
         elif opt == '-u':
             state.uiPort = int(arg)
         elif opt == '-z':
@@ -1392,6 +1479,7 @@ if __name__ == '__main__':
     state.createWorkers()
     if runSelfTest:
         print "\nRunning self-test...\n"
+        state.buildServerStrings()
         test()
         print "Self-test passed."   # ...else it would have asserted.
 
@@ -1402,20 +1490,19 @@ if __name__ == '__main__':
 
     elif 0 <= len(args) <= 2:
         # Normal usage, with optional server name and port number.
-        if len(args) >= 1:
-            state.serverName = args[0]
-        if len(args) >= 2:
-            state.serverPort = int(args[1])
+        if len(args) == 1:
+            state.servers = [(args[0], 110)]
+        elif len(args) == 2:
+            state.servers = [(args[0], int(args[1]))]
 
-        if not state.serverName:
+        if not state.servers or not state.servers[0][0]:
             print >>sys.stderr, \
                   ("Error: You must give a POP3 server name, either in\n"
-                   "bayescustomize.ini as pop3proxy_server_name or on the\n"
+                   "bayescustomize.ini as pop3proxy_servers or on the\n"
                    "command line.  pop3server.py -h prints a usage message.")
         else:
-            main(state.serverName, state.serverPort, state.proxyPort,
-                 state.uiPort, state.launchUI, state.databaseFilename,
-                 state.useDB)
+            state.buildServerStrings()
+            main(state.servers, state.proxyPorts, state.uiPort, state.launchUI)
 
     else:
         print >>sys.stderr, __doc__
