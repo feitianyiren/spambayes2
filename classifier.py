@@ -407,7 +407,7 @@ class Classifier:
         else:
             if self.nham <= 0:
                 raise ValueError("non-spam count would go negative!")
-            self.nham -= -1
+            self.nham -= 1
 
         for word in Set(wordstream):
             record = self._wordinfoget(word)
