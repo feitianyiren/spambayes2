@@ -85,18 +85,11 @@ pop3proxy.py
     the token database.  This piece will at some point be split out into
     a separate module.
 
-neiltrain.py
-    Builds a CDB (constant database) file of word probabilities using
-    spam and non-spam mail.  The database in intended for use with
-    neilfilter.py.
-
-neilfilter.py
-    A delivery agent that uses the CDB created by neiltrain.py and
-    delivers a message to one of two Maildir message folders, depending
-    on the classifier score.  Note that both Maildirs must be on the
-    same device.  An example .qmail or .forward file would be:
-
-     |python2.3 spambayes/neilfilter.py wordprobs.cdb Maildir/ Mail/Spam/
+mailsort.py
+    A delivery agent that uses a CDB of word probabilities and delivers
+    a message to one of two Maildir message folders, depending on the
+    classifier score.  Note that both Maildirs must be on the same
+    device.
 
 
 Test Driver Core
