@@ -866,6 +866,14 @@ def log2(n, log=math.log, c=math.log(2)):
 
 
 class Stripper(object):
+
+    # The retained portions are catenated together with self.separator.
+    # CAUTION:  This used to be blank.  But then I noticed spam putting
+    # HTML comments embedded in words, like
+    #     FR<!--slkdflskjf-->EE!
+    # Breaking this into "FR" and "EE!" wasn't a real help <wink>.
+    separator = ''  # a subclass can override if this isn't appropriate
+
     def __init__(self, find_start, find_end):
         # find_start and find_end have signature
         #     string, int -> match_object
@@ -902,8 +910,7 @@ class Stripper(object):
             if not m:
                 break
             dummy, i = m.span()
-        # Replace each skipped portion with a single blank.
-        return ' '.join(retained), tokens
+        return self.separator.join(retained), tokens
 
     def tokenize(self, match_object):
         # Override this if you want to suck info out of the start pattern.
@@ -913,7 +920,7 @@ class Stripper(object):
 # is (new_text, sequence_of_tokens), where new_text no longer contains
 # uuencoded stuff.  Note that we're not bothering to decode it!  Maybe
 # we should.  One of my persistent false negatives is a spam containing
-# nothing but a uuencoded money.txt; OTOH, uuencoded seems to be on
+# nothing but a uuencoded money.txt; OTOH, uuencode seems to be on
 # its way out (that's an old spam).
 
 uuencode_begin_re = re.compile(r"""
