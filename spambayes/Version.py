@@ -38,9 +38,6 @@ versions = {
     # Sub-dict for generating sub-sections in the cfg file that are compatible
     # with the update checking in older versions of SpamBayes.
     "Apps": {
-        "Outlook" : {
-            "Description":      "SpamBayes Outlook Addin",
-        },
         "POP3 Proxy" : {
             "Description":      "SpamBayes POP3 Proxy",
         },
@@ -282,9 +279,6 @@ def fetch_latest_dict(url=LATEST_VERSION_HOME):
 # Utilities for generating a 'config' version of this file.
 # The output of this should exist at the URL above.
 compat_apps = {
-    "Outlook" : {
-        "Description":      "SpamBayes Outlook Addin",
-    },
     "POP3 Proxy" : {
         "Description":      "SpamBayes POP3 Proxy",
     },

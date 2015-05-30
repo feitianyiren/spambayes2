@@ -90,14 +90,6 @@ scripts=['scripts/sb_client.py',
          'scripts/sb_chkopts.py',
         ]
 
-if sys.platform == 'win32':
-    # Also install the pop3proxy_service and pop3proxy_tray scripts.
-    # pop3proxy_service is only needed for installation and removal,
-    # but pop3proxy_tray needs to be used all the time.  Neither is
-    # any use on a non-win32 platform.
-    scripts.append('windows/pop3proxy_service.py')
-    scripts.append('windows/pop3proxy_tray.py')
-
 if sys.version_info >= (3, 0):
     lf_min_version = "0.6"
 else:
@@ -125,12 +117,9 @@ setup(
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Environment :: Plugins',
-        'Environment :: Win32 (MS Windows)',
         'License :: OSI Approved :: Python Software Foundation License',
         'Operating System :: POSIX',
         'Operating System :: MacOS :: MacOS X',
-        'Operating System :: Microsoft :: Windows :: Windows 95/98/2000',
-        'Operating System :: Microsoft :: Windows :: Windows NT/2000',
         'Natural Language :: English',
         'Programming Language :: Python',
         'Programming Language :: C',
